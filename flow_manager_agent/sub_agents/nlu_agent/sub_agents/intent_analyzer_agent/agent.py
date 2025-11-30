@@ -60,6 +60,19 @@ ALLOWED DIMENSIONS
 event_time, hr, is_engaged_view, is_retargeting,
 media_source, partner, app_id, site_id, engagement_type
 
+EXAMPLES – app_id pattern understanding
+The agent should infer automatically that any user reference containing a number
+and describing an application (in English or Hebrew) refers to app_id_<number>.
+Examples:
+  - "2" → app_id_2
+  "app id 2" → app_id_2
+  "APP-ID_2" → app_id_2
+  "אפליקציה 2" → app_id_2
+  "appId 2" → app_id_2
+  "application 2" → app_id_2
+The agent should always normalize these values into:
+  app_id_<number>
+
 ============================
 METRICS
 ============================
@@ -152,6 +165,13 @@ Required only if explicitly requested:
 
 Missing any REQUIRED field -> clarification_needed.
 
+# DEFAULT RETRIEVAL BEHAVIOR
+# --------------------------
+# If the user specifies number_of_rows but does NOT specify first/last,
+# automatically set:
+#     row_selection = "first"
+# Do NOT ask for clarification in this case.
+
 ============================
 INTENT TYPES
 ============================
@@ -161,6 +181,28 @@ analytics | find top | find bottom | anomaly | retrieval
 - Map rankings -> find top / find bottom
 - Map anomalies -> anomaly
 - Else analytics
+
+============================
+TOP INFERENCE RULE (GENERAL)
+============================
+If the user asks a question that includes phrases like:
+- "which X has the most"
+- "what X has the most"
+- "who has the most"
+- "באיזו/באיזה X יש הכי הרבה"
+- "מה ה-X עם הכי הרבה"
+- "מי/מה עם הכי הרבה"
+
+Then the intent MUST be interpreted as:
+    intent = "find top"
+
+The dimension should be derived from the user’s phrase:
+Examples:
+- "what hour has the most clicks" → dimensions=["hr"]
+- "which media_source has the most clicks" → dimensions=["media_source"]
+- "which app_id has the most events" → dimensions=["app_id"]
+
+This request MUST return only the top value, not a full breakdown.
 
 ============================
 OUTPUT FORMAT

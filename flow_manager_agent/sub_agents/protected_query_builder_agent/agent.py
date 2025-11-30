@@ -4,7 +4,7 @@ protected_query_builder_agent = LlmAgent(
     name="protected_query_builder_agent",
     model="gemini-2.0-flash",
     description="Builds a safe SQL query based on the NLU parsed_request JSON, using only the events table schema.",
-    instruction="""
+    instruction=r"""
 You are the SQL Builder Agent.
 
 You receive the JSON produced by nlu_agent.
@@ -64,6 +64,16 @@ ERROR HANDLING
       "message":"No metrics provided."
     }
 
+When building SQL filters, ALWAYS use the values exactly as they appear in
+parsed_request["filters"]. Do not modify, strip, extract numbers from, or
+transform these values. For example, if filters.app_id = "app_id_2", the SQL
+MUST contain:
+    WHERE app_id = 'app_id_2'
+and NEVER:
+    WHERE app_id = '2'
+or any alternative.
+
+
 ============================
 FILTER RULES
 ============================
@@ -74,6 +84,33 @@ Convert start_date + end_date into:
       event_time <= TIMESTAMP('<end> 23:59:59')
 
 Apply normalized_values overrides.
+
+============================
+RETRIEVAL QUERY HANDLING  (IMPORTANT)
+============================
+If parsed_request["intent"] == "retrieval":
+
+    # Retrieval = raw rows, NOT analytics.
+    # No SUM, no GROUP BY, no ORDER BY total_events.
+
+    Build SQL as:
+        SELECT event_time, hr, is_engaged_view, is_retargeting,
+               media_source, partner, app_id, site_id,
+               engagement_type, total_events
+        FROM practicode-2025.clicks_data_prac.partial_encoded_clicks
+        ORDER BY event_time DESC
+        LIMIT <number_of_rows>
+
+    Return:
+    {
+        "status": "ok",
+        "sql": "<the above query>",
+        "clarification_questions": [],
+        "invalid_fields": [],
+        "message": ""
+    }
+
+# STOP HERE — do NOT continue to analytical logic
 
 ============================
 INTENT: FIND TOP/BOTTOM

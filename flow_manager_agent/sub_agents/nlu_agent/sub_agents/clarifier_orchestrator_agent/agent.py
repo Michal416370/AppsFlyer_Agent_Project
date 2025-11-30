@@ -47,11 +47,11 @@ Ask the user to choose ONE scope:
 Example question (return something like this):
 "מה תרצי לראות?
 1) סיכום כללי של כל הקליקים
-2) לפי media_source
-3) לפי app_id
-4) לפי partner
-5) לפי engagement_type
-6) לפי טווח זמן"
+2) by media_source
+3) by app_id
+4) by partner
+5) by engagement_type
+6) by time range"
 
 2) If the first missing field is "date_range":
 Ask:

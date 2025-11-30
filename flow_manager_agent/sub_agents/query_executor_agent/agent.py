@@ -30,11 +30,43 @@ def run_bigquery(query: str):
             "executed_sql": query,
         }
 # --- האייגנט המתוקן והמחייב ---
+from google.adk.agents import Agent
+from .bq import BQClient # שינוי זה לשם המודול שבו נמצא BQClient
+
+# יצירת לקוח BigQuery - זוהי הנחת עבודה
+# ודא שמחלקה BQClient המקורית (שלא מכילה Mocking) זמינה לייבוא
+from .bq import BQClient 
+
+def run_bigquery(query: str):
+    try:
+        # 1. יצירת מופע הלקוח בתוך הפונקציה (פתרון הבעיה הגלובלית)
+        bq = BQClient() 
+        
+        # 2. קריאה לפונקציה האמיתית שלך
+        # המחלקה BQClient שלך מחזירה RowIterator, שצריך להמיר ל-DataFrame
+        result_iterator = bq.execute_query(query, 'adk_query')
+        df = result_iterator.to_dataframe()
+
+        return {
+            "status": "ok",
+            "result": df.to_markdown(index=False), 
+            "message": None,
+            "row_count": len(df),
+            "executed_sql": query,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "result": None,
+            "message": f"BigQuery execution error: {e}", 
+            "executed_sql": query,
+        }
+# --- האייגנט המתוקן והמחייב ---
 query_executor_agent = Agent(
     name="query_executor_agent",
     model="gemini-2.0-flash",
     description="Executes SQL query using the run_bigquery tool.",
-    instruction="""
+    instruction=r"""
 You receive a JSON object which is the output of the previous agent.
 This output CONTAINS the result of the SQL builder under the key 'built_query'.
 
@@ -51,4 +83,6 @@ Your ONLY task is to:
     output_key="execution_result",
     generate_content_config={"temperature": 0}, 
 )
+
+
 
