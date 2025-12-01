@@ -64,8 +64,7 @@ class FlowManagerFrontdoor(BaseAgent):
             async for ev in clarifier_agent.run_async(ctx):
                 yield ev
 
-            # question = state.get("clarification_question") or analysis.get("message") or "Can you clarify?"
-            # yield _text_event(question)
+           
             return  # <-- STOP. Next user msg will re-run Step 1 only.
 
         # --- Step 3: not relevant / error -> explain and STOP ---

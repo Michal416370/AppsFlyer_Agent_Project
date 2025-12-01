@@ -13,8 +13,6 @@ from ..response_insights_agent import response_insights_agent
 from ..human_response_agent import human_response_agent
 
 
-
-
 def _text_event(msg: str) -> Event:
     return Event(
         author="assistant",
@@ -99,4 +97,3 @@ class FullPipelineAgentV2(BaseAgent):
         # --- Step 6: Run human response agent ---
         async for ev in human_response_agent.run_async(ctx):
             yield ev
-            
