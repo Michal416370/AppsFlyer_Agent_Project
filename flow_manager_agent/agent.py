@@ -94,8 +94,17 @@ class RootAgent(BaseAgent):
             # ---------------------------
             # STEP B: SQL EXECUTOR
             # ---------------------------
+            # צבעים
+            RED = "\033[91m"
+            GREEN = "\033[92m"
+            BLUE = "\033[94m"
+            RESET = "\033[0m"
+            print(f"{BLUE}=== BEFORE BigQuery EXECUTION ==={RESET}")
+            logging.info("=== BEFORE BigQuery EXECUTION ===")
             async for event in query_executor_agent.run_async(context):
                 yield event
+            print(f"{GREEN}=== AFTER BigQuery EXECUTION ==={RESET}")
+            logging.info("=== AFTER BigQuery EXECUTION ===")
 
             sql_execution_result = _clean_json(session_state.get("execution_result", {}))
 
