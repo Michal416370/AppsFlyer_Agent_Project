@@ -65,6 +65,23 @@ intent_analyzer_agent = LlmAgent(
     - Do NOT extract any metric, scope, or dimensions.
     - Treat greetings as non-analytical and simply ask how you can help.
 
+    # NON-DATA CONTEXT DETECTION (NEW RULE)
+    If the user's message contains meaningful language
+    BUT does not reference anything related to data, analytics, metrics,
+    retrieval, clicks, events, dimensions, filtering, dates, tables, apps,
+    media sources, partners, site ids, or any domain-specific term,
+    AND is not a greeting:
+
+    Return:
+    {
+      "status": "not_relevant",
+      "message": "The request is not related to data analysis. Would you like to ask something about the dataset?"
+    }
+    Rules:
+    - Applies to normal text such as feelings, states, chit-chat, small talk,
+      jokes, or personal comments (e.g., “אני עייפה”, “אני רעב”, “זה קשה”, “בא לי שוקולד”).
+    - DOES NOT apply to gibberish — gibberish is also not_relevant, same text.
+    - DOES NOT apply to greetings — greetings use their own greeting message.
 
     ============================
     SUPPORTED REQUESTS
@@ -298,7 +315,28 @@ intent_analyzer_agent = LlmAgent(
     Return clarification_needed with missing_fields=["date_range"] and message:
     "The date is incomplete. Please provide a full date with day and month (year optional). Example: 25/10 or 25/10/2025."
 
+    TIME-ONLY EXPRESSIONS RULE (IMPORTANT)
+    --------------------------------------
+    If the user mentions a time, hour, or time-range WITHOUT a calendar date
+    (e.g., "02:00–05:00", "between 2 and 5", "at 03:00",
+    "morning", "evening", "at night", "בצהריים", "בלילה",
+    "on Monday", "on Friday"):
 
+    → You MUST NOT treat this as a date.
+    → You MUST NOT attempt to construct a full date.
+    → You MUST NOT trigger invalid-date or future-date rules.
+
+    If the user requested a time-bounded analysis but only gave a time
+    and NOT a date, you MUST return:
+
+    {
+      "status": "clarification_needed",
+      "missing_fields": ["date_range"],
+      "message": "Please specify the date (day and month) for this time range.",
+      "partial_intent": { ... }
+    }
+
+    
     ============================
     FUTURE DATE RULES (IMPORTANT)
     ============================
@@ -478,30 +516,29 @@ intent_analyzer_agent = LlmAgent(
        asked for a count/total (e.g., "how many", "כמה", "total clicks", "sum clicks").
 
     2) scope is NOT always required.
+      If the intent is analytics,
+      AND metric == "total_events",
+      AND filters contains at least one concrete dimension filter
+          (app_id, media_source, partner, site_id, engagement_type),
+      AND the user did NOT explicitly request a breakdown ("by <dimension>"),
+      AND the user did NOT request a time-bounded analysis,
+      AND scope is still null:
+
+          → You MUST automatically set:
+              scope = "overall_total"
+
+          → And immediately return:
+              status = "ok"
+
+          WITHOUT requesting scope.
 
        You MUST distinguish between two cases:
-
-       a) VAGUE, UNSCOPED QUESTIONS (no filters):
+       VAGUE, UNSCOPED QUESTIONS (no filters):
           - Example: "כמה קליקים היו?", "show me clicks"
           - filters is empty
           → In this case, you MUST ask for scope
             (missing_fields = ["scope"]).
-
-       b) FILTERED TOTAL for a specific entity:
-          - metric == "total_events"
-          - filters contains at least one concrete filter on a dimension
-            (e.g., app_id, media_source, partner, site_id, engagement_type)
-          - The user did NOT explicitly request a breakdown ("by X")
-            and did NOT explicitly request a time-bounded analysis.
-
-          → In this case you MUST:
-             - Automatically set:
-                 scope = "overall_total"
-             - Treat the request as fully specified.
-             - Return status = "ok".
-             - You MUST NOT ask for "scope".
-             - You MUST NOT return clarification_needed with missing_fields=["scope"].
-
+       
           Example:
           User: "app id"
             -> clarification_needed, missing_fields=["app_id"]
