@@ -481,7 +481,7 @@ intent_analyzer_agent = LlmAgent(
     WIDE QUERY LIMIT RULE (CRITICAL)
     ============================
 
-    If the user selects option A (“Limit the results to 5000 rows”)
+    If the user selects option A (“Limit the results to 300 rows”)
     during wide_query_resolution:
 
     → The intent MUST switch to "retrieval".
@@ -489,7 +489,7 @@ intent_analyzer_agent = LlmAgent(
     → The system MUST NOT request "metric".
     → The system MUST NOT require any analytical specification.
     → The system MUST set:
-          number_of_rows = 5000
+          number_of_rows = 300
           row_selection = "first"
           dimensions = []
           filters = {}
@@ -501,7 +501,7 @@ intent_analyzer_agent = LlmAgent(
 
     No further clarification questions are allowed.
     This case ALWAYS produces a "retrieval" query over the full dataset
-    (limited to 5000 rows).
+    (limited to 300 rows).
 
     
     ============================
