@@ -220,15 +220,8 @@ BASE_NLU_SPEC = r"""
        → Do NOT ask for date_range in this case.
        → Fill date_range directly in parsed_intent / partial_intent.
 
-       Example:
-         User: "כמה total_events היו אתמול?"
-         → metric="total_events"
-         → date_range = { "start_date": "<yesterday>", "end_date": "<yesterday>" }
-         → Do NOT set missing_fields=["date_range"].
-
     2) EXPLICIT DATES
        Valid single dates (with at least day+month):
-
          "25/10", "25.10", "25-10"
          "25/10/2025"
          "25 Oct"
@@ -264,142 +257,28 @@ BASE_NLU_SPEC = r"""
     METRIC + DATE_RANGE RULE (VERY IMPORTANT)
     ════════════════════════════════════════════
 
-    This section controls when you must ask for date_range and when you must NOT.
+    1) If the user asks for a metric AND already contains a date:
+       → interpret date
+       → set date_range
+       → do NOT ask for date_range
 
-    1) If the user asks for a metric (total_events) AND
-       the message ALREADY contains a natural-language date or explicit date
-       (single date or date range):
+    2) If the user asks for a metric AND no date:
+       → clarification_needed with missing_fields including "date_range"
 
-       - You MUST interpret that date.
-       - You MUST set date_range accordingly.
-       - You MUST NOT ask for date_range.
-       - status will be "ok" or clarification_needed ONLY for other missing fields (not date_range).
-
-       Example:
-         "כמה total_events היו אתמול?"
-         → metric="total_events"
-         → date_range=yesterday..yesterday
-         → status="ok" (assuming no other missing fields)
-
-    2) If the user asks for a metric (total_events) AND
-       there is NO date at all in the message:
-
-       - You MUST require date_range.
-       - Set:
-           status="clarification_needed"
-           missing_fields must include "date_range"
-         (and possibly others if also missing).
-
-       Examples:
-         - "כמה קליקים היו?"
-         - "כמה אירועים היו עבור app_id_3?"
-         - "כמה total_events היו ל-partner_7?"
-
-       In all such cases (no explicit/natural date):
-         → missing_fields MUST include "date_range".
-
-    3) Metric + breakdown case:
-       If the user asks:
-         "כמה קליקים לפי hr"
-         "כמה אירועים לפי media_source"
-         "breakdown לפי app_id"
-       and they ALSO specify a natural-language or explicit date:
-         → Fill date_range based on that date, do NOT ask for date_range.
-
-       If they DO NOT specify any date:
-         → You MUST still require date_range for metrics,
-           i.e. missing_fields must include "date_range".
-
-    ════════════════════════════════════════════
-    RANKING (FIND TOP / FIND BOTTOM) RULES
-    ════════════════════════════════════════════
-
-    Ranking intent is when the user asks for "who/what has the most/least", e.g.:
-
-      "איזה media_source שלח הכי הרבה קליקים?"
-      "איזה partner אחראי להכי הרבה total_events?"
-      "איזה site_id הכי פעיל?"
-      "איזה app_id מייצר הכי הרבה total_events?"
-      "איזה media_source שלח הכי מעט קליקים?"
-      "איזה partner הכי חלש מבחינת כמות אירועים?"
-      "איזו שעה ביום כמעט ולא מקבלת קליקים?"
-      "באיזו שעה הכי הרבה קליקים?"
-
-    Map these to:
-      intent = "find top"  (for best / most / highest)
-      intent = "find bottom" (for least / weakest / lowest)
-
-    You MUST set dimensions according to the question:
-      - media_source → dimensions=["media_source"]
-      - app_id       → dimensions=["app_id"]
-      - partner      → dimensions=["partner"]
-      - site_id      → dimensions=["site_id"]
-      - hr           → dimensions=["hr"]
-
-    DATE BEHAVIOR FOR RANKING:
-
-    1) Ranking over hr:
-
-       a) If the message DOES NOT contain any date at all:
-          - You are allowed to leave date_range = null.
-          - Do NOT ask for date_range.
-          - Example:
-              "איזו שעה ביום כמעט ולא מקבלת קליקים?"
-              → intent="find bottom"
-              → dimensions=["hr"]
-              → date_range = null
-              → status="ok"
-
-       b) If the message DOES contain a natural-language or explicit date:
-          - You MUST interpret that date.
-          - You MUST set date_range.
-          - You MUST NOT ask for date_range.
-          - Example:
-              "איזו שעה אתמול כמעט ולא קיבלה קליקים?"
-              → intent="find bottom"
-              → dimensions=["hr"]
-              → date_range = yesterday..yesterday
-              → status="ok"
-
-    2) Ranking over app_id / media_source / partner / site_id:
-
-       These MUST be time-bounded unless the user already gives a date.
-
-       a) If the message contains a natural-language or explicit date:
-          - Interpret and set date_range.
-          - Do NOT ask for date_range.
-
-       b) If the message does NOT contain any date:
-          - You MUST require date_range.
-          - Set:
-              status="clarification_needed"
-              missing_fields MUST include "date_range".
-
-          Example:
-            "איזה app_id מייצר הכי הרבה total_events?"
-            → intent="find top"
-            → dimensions=["app_id"]
-            → missing_fields includes ["date_range"].
-
-    3) Ranking over engagement_type or other supported dimensions (if used):
-       - Same behavior as app_id/media_source/partner/site_id:
-         require date_range unless a date is explicitly or naturally provided.
+    3) Metric + breakdown:
+       If breakdown has date → fill date_range
+       If no date → still require date_range
 
     ════════════════════════════════════════════
     WIDE QUERY RULE
     ════════════════════════════════════════════
 
-    If the user requests an extremely broad analytics query without any filter, for example:
+    If the user requests an extremely broad analytics query without any filter:
       "כל הדאטה", "תראה לי הכל", "all clicks", "all events"
-
-    → Return clarification_needed with:
-       missing_fields=["wide_query_resolution"]
-       partial_intent.intent = "analytics"
-       number_of_rows = null
-       row_selection = null
+    → clarification_needed with missing_fields=["wide_query_resolution"]
 
     If later the user chooses "Limit the results to 300 rows":
-      - The intent type becomes "retrieval".
+      - intent becomes "retrieval"
       - number_of_rows = 300
       - row_selection = "first"
       - Do NOT require metric or date_range.
@@ -418,6 +297,91 @@ BASE_NLU_SPEC = r"""
     → intent = "retrieval"
     → number_of_rows parsed from the question (default null if not clear).
     → date_range is not required by default for basic retrieval unless explicitly mentioned.
+
+
+    ════════════════════════════════════════════
+    ANOMALY INTENT RULES (NEW)
+    ════════════════════════════════════════════
+
+    If the user asks about anomalies / חריגות, you MUST classify:
+
+        intent = "anomaly"
+
+    Hebrew triggers (examples, not exhaustive):
+      - "חריגות"
+      - "אנומליות"
+      - "האם הייתה חריגה"
+      - "האם היה spike"
+      - "קפיצה חריגה"
+      - "ירידה חריגה"
+      - "תן לי את החריגות של אתמול"
+      - "איזה חריגות היו השבוע"
+      - "חריגה בשעה 3"
+      - "click spike"
+      - "anomalies"
+      - "anomaly detection"
+      - "show anomalies"
+
+    Behavior:
+    - metric is NOT required for anomaly intent.
+      Set metric = null unless user explicitly asks for counts.
+    - If user provides a natural-language or explicit date ("אתמול", "השבוע", "25.10"):
+        → you MUST fill date_range accordingly and return status="ok".
+    - If user does NOT provide any date:
+        → default to yesterday using SYSTEM DATE DIRECTIVE:
+            date_range = {start_date:yesterday, end_date:yesterday}
+        → status="ok"
+      (Do NOT ask for date_range for anomaly intent.)
+
+    Output example:
+    User: "תן לי חריגות של אתמול"
+    →
+    {
+      "status":"ok",
+      "parsed_intent":{
+        "intent":"anomaly",
+        "metric":null,
+        "dimensions":[],
+        "filters":{},
+        "invalid_fields":[],
+        "date_range":{"start_date":"<yesterday>","end_date":"<yesterday>"},
+        "number_of_rows":null,
+        "row_selection":null
+      }
+    }
+
+
+    ════════════════════════════════════════════
+    RANKING (FIND TOP / FIND BOTTOM) RULES
+    ════════════════════════════════════════════
+
+    Ranking intent is when the user asks for "who/what has the most/least", e.g.:
+
+      "איזה media_source שלח הכי הרבה קליקים?"
+      "איזה partner אחראי להכי הרבה total_events?"
+      "איזה site_id הכי פעיל?"
+      "איזה app_id מייצר הכי הרבה total_events?"
+      "איזה media_source שלח הכי מעט קליקים?"
+      "איזה partner הכי חלש מבחינת כמות אירועים?"
+      "איזו שעה ביום כמעט ולא מקבלת קליקים?"
+      "באיזו שעה הכי הרבה קליקים?"
+
+    Map these to:
+      intent = "find top"
+      intent = "find bottom"
+
+    You MUST set dimensions according to the question:
+      - media_source → dimensions=["media_source"]
+      - app_id       → dimensions=["app_id"]
+      - partner      → dimensions=["partner"]
+      - site_id      → dimensions=["site_id"]
+      - hr           → dimensions=["hr"]
+
+    DATE BEHAVIOR FOR RANKING:
+    - hr without date → ok, date_range=null
+    - hr with date → ok with date_range
+    - app_id/media_source/partner/site_id without date → clarification_needed (date_range)
+    - app_id/media_source/partner/site_id with date → ok with date_range
 
     ════════════════════════════════════════════
     INVALID FIELD RULE
@@ -443,15 +407,12 @@ BASE_NLU_SPEC = r"""
     5. Ambiguous entity (unknown dimension) → clarification_needed
     6. Value-only (only dimension/value, no question) → clarification_needed
     7. Wide-query → clarification_needed
-    8. Retrieval (rows/preview) → ok
-    9. Ranking (find top/bottom):
-         - If hr and no date → ok with date_range=null.
-         - If hr with date → ok with date_range filled.
-         - If app_id/media_source/partner/site_id and no date → clarification_needed (date_range).
-         - If app_id/media_source/partner/site_id with date → ok with date_range filled.
-    10. Metric with explicit/natural date → ok with date_range filled.
-    11. Metric without any date → clarification_needed (missing_fields includes "date_range").
-    12. Fully specified (metric, dimensions, filters, and date logic satisfied) → ok.
+    8. Anomaly intent (חריגות / אנומליות) → ok (auto date_range as specified)
+    9. Retrieval (rows/preview) → ok
+    10. Ranking (find top/bottom) rules apply
+    11. Metric with explicit/natural date → ok with date_range filled.
+    12. Metric without any date → clarification_needed (missing_fields includes "date_range").
+    13. Fully specified → ok.
 
     ════════════════════════════════════════════
     END OF SPEC
