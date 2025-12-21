@@ -1,0 +1,22 @@
+Useful commands (powershell):
+
+הפעלת הסביבה הוירטואלית
+venv\Scripts\activate
+
+יציאה מהסביבה הוירטואלית
+deactivate
+
+ניקוי המסך
+cls
+
+כניסה לפרוייקט
+cd AppsFlyerAgent
+
+adkהרצת השרת מהתקיה הראשית ב
+$env:PYTHONPATH="C:\Michal\Attempted_re_git"; cd C:\Michal\Attempted_re_git\AppsFlyerAgent; adk web
+
+הרמת השרת מהתיקיה AppsFlyer_Practicode
+python -m uvicorn AppsFlyerAgent.main:app --reload
+
+הרצת ממשק הריאקט מהתיקיה frontend
+npm run dev

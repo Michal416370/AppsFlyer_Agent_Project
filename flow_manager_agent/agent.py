@@ -131,21 +131,38 @@ class RootAgent(BaseAgent):
                 yield _text_event(built_query.get("message", "SQL Builder error"))
                 return
 
-            # Query Executor
-            async for event in query_executor_agent.run_async(context):
-                yield event
-
-            sql_result = _clean_json(session_state.get("execution_result", {}))
+            # Query Executor (Python function, not agent)
+            built_query_raw = session_state.get("built_query")
+            built_query = self._parse_built_query(built_query_raw)
+            
+            logging.info("🔴 [RootAgent] Calling query_executor_agent with built_query")
+            sql_result = query_executor_agent(built_query)
+            logging.info(f"🔴 [RootAgent] query_executor_agent returned: {json.dumps(sql_result, indent=2)[:500]}")
+            
+            session_state["execution_result"] = sql_result
+            logging.info(f"🔴 [RootAgent] Set execution_result in session_state")
 
             # Insights Agent
             session_state["insights_payload"] = {"execution_result": sql_result}
+            logging.info(f"🔴 [RootAgent] Running response_insights_agent...")
             async for event in response_insights_agent.run_async(context):
                 yield event
 
-            # Human Response Agent
-            async for event in human_response_agent.run_async(context):
-                yield event
+            # Human Response Agent (Python function, not LLM agent)
+            insights_result_raw = session_state.get("insights_result", {})
+            insights_result = self._parse_built_query(insights_result_raw)  # Parse if it's a string
+            
+            logging.info(f"🔴 [RootAgent] Calling human_response_agent (Python function)...")
+            logging.info(f"🔴 [RootAgent] execution_result status: {sql_result.get('status')}")
+            logging.info(f"🔴 [RootAgent] insights_result type: {type(insights_result)}")
+            
+            final_response = human_response_agent(sql_result, insights_result)
+            logging.info(f"🔴 [RootAgent] Final response length: {len(final_response)}")
+            
+            # Yield the final response as an event
+            yield _text_event(final_response)
 
+            logging.info(f"🔴 [RootAgent] Analytics flow completed")
             return
 
         # fallback (shouldn't reach)
