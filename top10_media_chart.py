@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from bq import BQClient
+from backend.bq import BQClient
 
 
 # השאילתה - בדיוק כמו שכתבת

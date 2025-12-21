@@ -8,7 +8,7 @@ from google.adk.agents import BaseAgent
 from google.adk.events import Event
 from google.genai import types
 
-from bq import BQClient
+from backend.bq import BQClient
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from flow_manager_agent.agent import root_agent
-from bq import BQClient
+from backend.bq import BQClient
 from google.adk.apps import App
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService

@@ -13,10 +13,10 @@ cls
 cd AppsFlyerAgent
 
 adkהרצת השרת מהתקיה הראשית ב
-$env:PYTHONPATH="C:\Michal\Attempted_re_git"; cd C:\Michal\Attempted_re_git\AppsFlyerAgent; adk web
+$env:PYTHONPATH="C:\Michal\Attempted_re_git"; cd C:\Michal\Attempted_re_git\AppsFlyerAgent\backend; adk web
 
 הרמת השרת מהתיקיה AppsFlyer_Practicode
-python -m uvicorn AppsFlyerAgent.main:app --reload
+python -m uvicorn AppsFlyerAgent.backend.main:app --reload
 
 הרצת ממשק הריאקט מהתיקיה frontend
 npm run dev
