@@ -3,14 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from flow_manager_agent.agent import root_agent
-from backend.bq import BQClient
+from bq import BQClient
 from google.adk.apps import App
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.genai import types
 from google.adk.utils.context_utils import Aclosing
-import uuid
-import logging
+
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -58,28 +57,29 @@ class ChatRequest(BaseModel):
     message: str
 
 
-# ---- Helper: run agent ----
+# ---- Helper: run agent (UPDATED) ----
 async def run_agent(message: str):
-    # יצירת session אם לא קיים
     session = await session_service.get_session(
         app_name=adk_app.name,
         user_id=USER_ID,
         session_id=SESSION_ID
     )
-    
+
     if not session:
         session = await session_service.create_session(
             app_name=adk_app.name,
             user_id=USER_ID,
             session_id=SESSION_ID
         )
-    
-    # יצירת תוכן ההודעה
-    content = types.Content(role='user', parts=[types.Part(text=message)])
-    
-    last_event = None
-    
-    # הרצת האגנט
+
+    content = types.Content(
+        role="user",
+        parts=[types.Part(text=message)]
+    )
+
+    last_text = None
+    final_root_text = None
+
     async with Aclosing(
         runner.run_async(
             user_id=USER_ID,
@@ -88,23 +88,26 @@ async def run_agent(message: str):
         )
     ) as agen:
         async for event in agen:
-            last_event = event
+            if not event or not event.content or not event.content.parts:
+                continue
 
-    if not last_event:
-        return {"error": "No response from agent"}
+            part = event.content.parts[0]
 
-    if not last_event.content or not last_event.content.parts:
-        return {"error": "Empty response from agent"}
+            if getattr(part, "text", None):
+                last_text = part.text
+                logger.debug(f"event author={event.author}")
 
-    part = last_event.content.parts[0]
+                # מחזירים רק תשובה של root_agent
+                if event.author == "root_agent":
+                    final_root_text = part.text
 
-    if part.text:
-        return part.text
+    if final_root_text:
+        return final_root_text
 
-    if part.inline_data:
-        return part.inline_data
+    if last_text:
+        return last_text
 
-    return {"error": "Unknown agent response"}
+    return {"error": "No response from agent"}
 
 
 # ---- API endpoint ----
@@ -122,10 +125,10 @@ async def chat(req: ChatRequest):
                 )
             except Exception as e:
                 logger.error(f"Failed to save user message: {e}")
-        
+
         # הרצת האגנט
         response = await run_agent(req.message)
-        
+
         # שמירת תשובת האגנט
         if bq_client:
             try:
@@ -137,9 +140,10 @@ async def chat(req: ChatRequest):
                 )
             except Exception as e:
                 logger.error(f"Failed to save assistant message: {e}")
-        
+
         return response
+
     except Exception as e:
         import traceback
-        traceback.print_exc()  # 👈 זה מה שחשוב עכשיו
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
