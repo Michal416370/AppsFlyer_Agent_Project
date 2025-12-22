@@ -31,10 +31,11 @@ def _text_event(message: str) -> Event:
 
 
 # ============================================================
-# ✅ DATA AVAILABILITY WINDOW (adjust when your dataset grows)
+# DATA AVAILABILITY WINDOW (internal only; user won't see it)
 # ============================================================
 DATA_AVAILABLE_FROM = date(2025, 10, 24)
 DATA_AVAILABLE_TO = date(2025, 10, 26)
+
 
 def _parse_iso_date(s: str) -> date | None:
     """Parse YYYY-MM-DD safely."""
@@ -45,10 +46,12 @@ def _parse_iso_date(s: str) -> date | None:
     except Exception:
         return None
 
+
 def _requested_range_outside_available(parsed_intent: dict) -> tuple[bool, str]:
     """
     Returns:
       (is_outside, message_to_user_if_outside)
+    User message includes ONLY requested date/range (not availability window).
     """
     dr = (parsed_intent or {}).get("date_range")
     if not isinstance(dr, dict):
@@ -70,20 +73,17 @@ def _requested_range_outside_available(parsed_intent: dict) -> tuple[bool, str]:
     if end_d and not start_d:
         start_d = end_d
 
-    # Outside window?
+    # Outside internal window?
     if start_d < DATA_AVAILABLE_FROM or end_d > DATA_AVAILABLE_TO:
         requested_txt = (
             start_d.strftime("%Y-%m-%d")
             if start_d == end_d
             else f"{start_d.strftime('%Y-%m-%d')} עד {end_d.strftime('%Y-%m-%d')}"
         )
-        available_txt = f"{DATA_AVAILABLE_FROM.strftime('%Y-%m-%d')} עד {DATA_AVAILABLE_TO.strftime('%Y-%m-%d')}"
 
         msg = (
             f"❌ אין לי מידע על התאריך/טווח שביקשת: **{requested_txt}**.\n"
-            f"כרגע יש לי נתונים רק עבור: **{available_txt}**.\n\n"
-            f"אם תרצי, אני יכול לעזור לך במידע על אחד מהתאריכים בטווח הזה "
-            f"(למשל: 'מי ה־media_source עם הכי הרבה קליקים ב־{DATA_AVAILABLE_FROM.strftime('%Y-%m-%d')}'?)."
+            f"אם תרצי, נסי לשאול על תאריך אחר."
         )
         return (True, msg)
 
@@ -172,7 +172,7 @@ class RootAgent(BaseAgent):
                 return
 
             # ---------------------------
-            # ✅ NEW: Date availability guard
+            # ✅ Date availability guard (user sees only requested date)
             # ---------------------------
             outside, msg = _requested_range_outside_available(parsed_intent)
             if outside:
