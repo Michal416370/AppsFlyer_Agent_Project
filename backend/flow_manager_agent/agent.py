@@ -21,6 +21,9 @@ import re
 import logging
 from datetime import datetime, timedelta, date
 import pytz
+import time
+
+
 
 
 def _text_event(message: str) -> Event:
@@ -119,6 +122,12 @@ class RootAgent(BaseAgent):
             → ALWAYS use year {today.year}.
 
             If interpreted date is in the future → return future-date error.
+
+            IMPORTANT OVERRIDE FOR ANOMALY:
+            - If intent is "anomaly" AND the user did NOT explicitly mention a date or date range,
+            you MUST set:
+            date_range = {{ "start_date": "2025-10-24", "end_date": "2025-10-26" }}
+            - Do NOT default to "yesterday" in anomaly when no explicit date was provided.
 
             # END OF DATE DIRECTIVE
         """

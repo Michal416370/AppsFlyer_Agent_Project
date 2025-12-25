@@ -9,16 +9,16 @@ ALL_MEDIA_SQL = """
 SELECT
     DATE(event_time) AS event_date,
     hr AS event_hour,
-    media_source,
+    partner,
     SUM(total_events) AS total_clicks
 FROM `practicode-2025.clicks_data_prac.partial_encoded_clicks_part`
-WHERE media_source = 'media_source_1032'
+WHERE partner = 'partner_540'
 GROUP BY
     event_date,
     event_hour,
-    media_source
+    partner
 ORDER BY
-    media_source;
+    partner;
 """
 
 
@@ -44,7 +44,7 @@ def main():
 
     # נסכום סה"כ קליקים לכל media_source
     totals = (
-        df.groupby("media_source")["total_clicks"]
+        df.groupby("partner")["total_clicks"]
         .sum()
         .sort_values(ascending=False)
     )
@@ -53,17 +53,17 @@ def main():
     TOP_N = 10
     top_sources = totals.head(TOP_N).index.tolist()
 
-    print(f"משרטטת את TOP {TOP_N} media_source-ים:")
+    print(f"משרטטת את TOP {TOP_N} partner-ים:")
     for src in top_sources:
         print("  -", src)
 
-    df_top = df[df["media_source"].isin(top_sources)]
+    df_top = df[df["partner"].isin(top_sources)]
 
     # pivot: שורה = זמן, עמודות = media_source, ערך = total_clicks
     pivot = (
         df_top.pivot(
             index="event_ts",
-            columns="media_source",
+            columns="partner",
             values="total_clicks",
         )
         .fillna(0)
