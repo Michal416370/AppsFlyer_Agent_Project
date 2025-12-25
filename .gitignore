@@ -7,6 +7,4 @@ del practicode-2025-c9327eb0efc7.json
 practicode-2025-c9327eb0efc7.json
 .DS_Store
 .idea/
-
-
-node_modules
+.adk
