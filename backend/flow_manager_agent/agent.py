@@ -168,18 +168,7 @@ class RootAgent(BaseAgent):
             parsed_intent = intent_analysis.get("parsed_intent", {})
             intent_type = parsed_intent.get("intent")
 
-            # ---------------------------
-            # ✅ ANOMALY FLOW
-            # ---------------------------
-            if intent_type == "anomaly":
-                logging.info("[RootAgent] === ANOMALY FLOW START ===")
-                async for event in anomaly_agent.run_async(context):
-                    yield event
-                async for event in react_visual_agent.run_async(context):
-                    yield event
-                logging.info("[RootAgent] === ANOMALY FLOW END ===")
-                return
-
+    
             # ---------------------------
             # ✅ Date availability guard (user sees only requested date)
             # ---------------------------
