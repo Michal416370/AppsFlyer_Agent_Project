@@ -11,7 +11,8 @@ import {
   ReferenceDot,
   Legend
 } from "recharts";
-import type { ChartPoint, Anomaly } from "./AnomalyVisualizationDashboard";
+import type { ChartPoint, Anomaly } from "./anomalyVisualizationDashboard";
+import "../styles/anomalyChart.css";
 
 interface Props {
   data?: ChartPoint[];
@@ -31,48 +32,29 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload || !payload.length) return null;
 
   return (
-    <div
-      style={{
-        background: "rgba(255, 255, 255, 0.98)",
-        border: "1px solid #e0e0e0",
-        borderRadius: "12px",
-        padding: "12px 16px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
-      }}
-    >
-      <p style={{ margin: 0, fontWeight: 600, color: "#333", marginBottom: 8 }}>
+    <div className="anomaly-tooltip">
+      <p className="anomaly-tooltip-label">
         {formatHour(label)}
       </p>
       {payload.map((entry: any, index: number) => (
-        <p
-          key={index}
-          style={{
-            margin: "4px 0",
-            color: entry.color,
-            fontSize: "14px",
-            fontWeight: 500
-          }}
-        >
-          <span style={{ opacity: 0.8 }}>{entry.name}:</span>{" "}
-          <strong>{entry.value?.toLocaleString()}</strong>
-        </p>
+        <div key={index} className="anomaly-tooltip-item-wrapper">
+          <p className="anomaly-tooltip-item">
+            <span className="anomaly-tooltip-name">{entry.name}:</span>{" "}
+            <span className="anomaly-tooltip-value" data-series={entry.name.toLowerCase()}>
+              {entry.value?.toLocaleString()}
+            </span>
+          </p>
+        </div>
       ))}
     </div>
   );
 };
 
 const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} }) => {
+  const chartHeight = config.height ?? 400;
+
   return (
-    <div
-      style={{
-        width: "100%",
-        height: config.height ?? 400,
-        background: "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)",
-        borderRadius: "16px",
-        padding: "20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-      }}
-    >
+    <div className="anomaly-chart-container" data-chart-height={chartHeight}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>

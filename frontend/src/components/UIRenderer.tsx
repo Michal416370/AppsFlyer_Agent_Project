@@ -1,5 +1,6 @@
 import React from "react";
 import { componentMap } from "./componentMap";
+import "../styles/uiRenderer.css";
 
 type UINode = {
   component: string;
@@ -14,7 +15,7 @@ export const UIRenderer = ({ node }: { node: UINode }) => {
 
   if (!Component) {
     return (
-      <div style={{ color: "red" }}>
+      <div className="ui-error">
         Unknown component: {node.component}
       </div>
     );

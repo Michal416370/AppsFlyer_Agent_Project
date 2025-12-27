@@ -1,5 +1,6 @@
 import React from "react";
-import AnomalyChart from "./AnomalyChart";
+import AnomalyChart from "./anomalyChart";
+import "../styles/anomalyVisualizationDashboard.css";
 
 export type Anomaly = {
   name: string;
@@ -47,94 +48,36 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
   };
 
   return (
-    <div
-      style={{
-        padding: "24px",
-        background: "#ffffff",
-        borderRadius: "20px",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-        maxWidth: "100%",
-        width: "100%",
-        boxSizing: "border-box",
-        overflow: "hidden"
-      }}
-    >
-      <h2
-        style={{
-          margin: "0 0 20px 0",
-          fontSize: "24px",
-          fontWeight: 700,
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text"
-        }}
-      >
+    <div className="anomaly-dashboard">
+      <h2 className="anomaly-title">
         {title}
       </h2>
 
       {/* Stats Cards */}
-      <div
-        style={{
-          display: "flex",
-          gap: "16px",
-          marginBottom: "24px",
-          flexWrap: "wrap"
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            minWidth: "150px",
-            padding: "16px 20px",
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            borderRadius: "12px",
-            color: "white",
-            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)"
-          }}
-        >
-          <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: 4 }}>
+      <div className="anomaly-stats-container">
+        <div className="anomaly-stat-card total">
+          <div className="anomaly-stat-label">
             סה״כ אנומליות
           </div>
-          <div style={{ fontSize: "32px", fontWeight: 700 }}>
+          <div className="anomaly-stat-value">
             {computedStats.total}
           </div>
         </div>
 
-        <div
-          style={{
-            flex: 1,
-            minWidth: "150px",
-            padding: "16px 20px",
-            background: "linear-gradient(135deg, #fc8181 0%, #f56565 100%)",
-            borderRadius: "12px",
-            color: "white",
-            boxShadow: "0 4px 12px rgba(252, 129, 129, 0.3)"
-          }}
-        >
-          <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: 4 }}>
+        <div className="anomaly-stat-card spike">
+          <div className="anomaly-stat-label">
             ספייקים ⬆️
           </div>
-          <div style={{ fontSize: "32px", fontWeight: 700 }}>
+          <div className="anomaly-stat-value">
             {computedStats.spike_count}
           </div>
         </div>
 
-        <div
-          style={{
-            flex: 1,
-            minWidth: "150px",
-            padding: "16px 20px",
-            background: "linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%)",
-            borderRadius: "12px",
-            color: "white",
-            boxShadow: "0 4px 12px rgba(79, 209, 197, 0.3)"
-          }}
-        >
-          <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: 4 }}>
+        <div className="anomaly-stat-card drop">
+          <div className="anomaly-stat-label">
             ירידות ⬇️
           </div>
-          <div style={{ fontSize: "32px", fontWeight: 700 }}>
+          <div className="anomaly-stat-value">
             {computedStats.drop_count}
           </div>
         </div>

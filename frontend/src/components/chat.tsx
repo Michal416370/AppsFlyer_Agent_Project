@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { UIRenderer } from "./UIRenderer";
+import { UIRenderer } from "./uiRenderer";
 import { TypingLoader } from "./typingLoader";
 import "../styles/chat.css";
 
@@ -52,6 +52,12 @@ export const Chat = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isLoading]);
 
+    const resetChat = () => {
+        setMessages([]);
+        setInput("");
+        setIsLoading(false);
+    };
+
     async function sendMessage() {
         if (isLoading) return;      // ⬅️ זה העיקר
         if (!input.trim()) return;
@@ -89,11 +95,14 @@ export const Chat = () => {
         <div className="app-layout">
             {/* Sidebar */}
             <aside className="chat-sidebar">
+                <button className="new-chat-btn" onClick={resetChat}>
+                    + New Chat
+                </button>
                 <div className="sidebar-title">Chats</div>
                 <ul className="chat-history">
-                    <li className="active">אליפסיס ומשמעותה</li>
-                    <li>דוגמאות גרפים ספריות</li>
-                    <li>Git add error solution</li>
+                    <li className="active">Clicks by media source</li>
+                    <li>Anomaly detection</li>
+                    <li>Total events by app id</li>
                 </ul>
             </aside>
 

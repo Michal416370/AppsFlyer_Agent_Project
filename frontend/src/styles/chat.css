@@ -1,5 +1,6 @@
 :root {
-    --af-green: #7AD143;
+    --af-pink: #ffcae7;
+    --af-pink-light: #F5D5E8;
     --af-blue: #00C2FF;
     --af-purple: #220D4E;
     --af-gray: #F5F6FA;
@@ -19,23 +20,45 @@
     width: 400px;
     min-width: 400px;
     background: var(--af-purple);
-    color: var(--af-green);
+    color: #fff;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 24px 16px;
+    /* Slightly more horizontal padding on the purple sidebar */
+    padding: 45px 45px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-title {
     font-size: 13px;
     font-weight: 600;
-    color: var(--af-green);
+    color: var(--af-pink);
     margin-bottom: 12px;
+    margin-top: 16px;
+}
+
+.new-chat-btn {
+    background: #FFFFFF;
+    border: none;
+    color: var(--af-purple);
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+}
+
+.new-chat-btn:hover {
+    background: var(--af-pink);
 }
 
 .chat-history {
     list-style: none;
     padding: 0;
     margin: 0;
+    flex: 1;
 }
 
 .chat-history li {
@@ -43,15 +66,17 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
-    color: white;
+    color: #fff;
+    transition: all 0.2s ease;
 }
 
 .chat-history li:hover {
-    background-color: rgb(22, 0, 50);
+    background-color: rgba(255, 202, 231, 0.2);
+    color: var(--af-pink);
 }
 
 .chat-history li.active {
-    color: var(--af-green);
+    color: var(--af-pink);
 }
 
 /* ===== קונטיינר צ'אט ===== */
@@ -114,6 +139,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .send-button:disabled {
@@ -128,6 +154,11 @@
   width: 20px;   /* אפשר 18–22 לפי האייקון */
   height: 20px;
   object-fit: contain;
+  transition: filter 0.3s ease;
+}
+
+.send-button:hover .send-icon {
+  filter: brightness(0) saturate(100%) invert(87%) sepia(16%) saturate(1098%) hue-rotate(295deg) brightness(108%) contrast(103%);
 }
 
 /* ===== הודעות ===== */
@@ -166,6 +197,9 @@
     background: var(--af-purple);
     color: white;
     border-radius: 16px 16px 4px 16px;
+    /* Add a bit of space on both sides for the purple bubble */
+    margin-left: 8px;
+    margin-right: 8px;
 }
 
 .chat-message.assistant {
@@ -180,7 +214,8 @@
     width: 100%;
     max-width: 100%;
     padding: 20px 24px;
-    border-radius: 14px;
+    /* Mirrored bubble shape: one square-ish corner on the left */
+    border-radius: 16px 16px 16px 4px;
 }
 
 /* ===== Input ===== */

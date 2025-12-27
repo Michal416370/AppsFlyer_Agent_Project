@@ -1,0 +1,61 @@
+.anomaly-dashboard {
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.anomaly-title {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.anomaly-stats-container {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.anomaly-stat-card {
+  flex: 1;
+  min-width: 150px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  color: white;
+}
+
+.anomaly-stat-card.total {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.anomaly-stat-card.spike {
+  background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+  box-shadow: 0 4px 12px rgba(252, 129, 129, 0.3);
+}
+
+.anomaly-stat-card.drop {
+  background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
+  box-shadow: 0 4px 12px rgba(79, 209, 197, 0.3);
+}
+
+.anomaly-stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.anomaly-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+}
