@@ -41,6 +41,10 @@ class ReactVisualizationAgent(BaseAgent):
         # STEP 1 — משיכת תוצאות האנומליות מה-state
         # ============================================================
         anomaly_result = state.get("anomaly_result")
+        timeseries = state.get("anomaly_timeseries")
+        timeseries_multi = state.get("anomaly_timeseries_multi") or state.get("anomaly_timeseries")
+        series_defs_state = state.get("anomaly_series_defs") or []
+        table_markdown = state.get("anomaly_table_markdown") or ""
         
         if not anomaly_result:
             yield _text_event("⚠️ אין נתוני אנומליות להצגה. אנא הרץ סוכן אנומליות קודם.")
@@ -64,25 +68,113 @@ class ReactVisualizationAgent(BaseAgent):
         yield _text_event(f"DEBUG anomalies count = {len(anomalies)}")
         
         if not anomalies:
-            yield _text_event("✅ לא נמצאו אנומליות בנתונים.")
+            # If no anomalies, but we have timeseries, render it as the main chart
+            if isinstance(timeseries, list) and timeseries:
+                chart_data = []
+                try:
+                    for p in timeseries:
+                        chart_data.append({
+                            "hour": str(p.get("hour", "")),
+                            "clicks": float(p.get("clicks", 0) or 0),
+                            "baseline": float(p.get("baseline", 0) or 0),
+                            "source": p.get("source", "All"),
+                            "type": p.get("type", "baseline")
+                        })
+                except Exception:
+                    chart_data = []
+
+                stats = {"total": 0, "spike_count": 0, "drop_count": 0, "max_deviation": 0}
+                react_component = {
+                    "component": "AnomalyVisualizationDashboard",
+                    "props": {
+                        "chartData": chart_data,
+                        "anomalies": [],
+                        "stats": stats,
+                        "title": "זיהוי אנומליות בקליקים"
+                    }
+                }
+                json_str = json.dumps(react_component, ensure_ascii=False)
+                yield _text_event(f"__REACT_COMPONENT__{json_str}")
+                return
+            # No anomalies and no timeseries → render an empty dashboard
+            yield _text_event("✅ לא נמצאו אנומליות בנתונים. מציגה דשבורד ריק לתצוגה.")
+            chart_data = []
+            stats = {"total": 0, "spike_count": 0, "drop_count": 0, "max_deviation": 0}
+            react_component = {
+                "component": "AnomalyVisualizationDashboard",
+                "props": {
+                    "chartData": chart_data,
+                    "anomalies": [],
+                    "stats": stats,
+                    "title": "זיהוי אנומליות בקליקים"
+                }
+            }
+            json_str = json.dumps(react_component, ensure_ascii=False)
+            yield _text_event(f"__REACT_COMPONENT__{json_str}")
             return
         
         # ============================================================
         # STEP 3 — בניית הנתונים עבור הגרף
         # ============================================================
-        chart_data = self._build_chart_data(anomalies)
+        # Prefer a full timeseries for the chart if available
+        chart_data = []
+        try:
+            # Multi-series (points contain multiple keys)
+            used_multi = isinstance(timeseries_multi, list) and len(timeseries_multi) > 0
+            if used_multi:
+                chart_data = []
+                for p in timeseries_multi:
+                        # Sanitize values to be non-negative numbers
+                        safe_values = {}
+                        for k, v in p.items():
+                            if k in ("hour","source","type"):
+                                continue
+                            try:
+                                num = float(v)
+                                if not (num == num):  # NaN check
+                                    num = 0.0
+                                if num < 0:
+                                    num = 0.0
+                                safe_values[k] = num
+                            except Exception:
+                                safe_values[k] = 0.0
+                        chart_data.append({
+                        "hour": str(p.get("hour", "")),
+                            # Copy over sanitized series values
+                            **safe_values
+                    })
+            else:
+                chart_data = self._build_chart_data(anomalies)
+        except Exception:
+            chart_data = self._build_chart_data(anomalies)
         stats = self._calculate_stats(anomalies)
         
         # ============================================================
         # STEP 4 — בניית קומפוננט React
         # ============================================================
+        # Use series definitions only when multi-series data is present
+        series_defs_to_use = series_defs_state if 'chart_data' in locals() and isinstance(timeseries_multi, list) and len(timeseries_multi) > 0 else []
+
+        # Filter series definitions to only keys present in chartData
+        keys_present = set()
+        if chart_data:
+            for k, v in chart_data[0].items():
+                if k != "hour":
+                    keys_present.add(k)
+        filtered_series = [s for s in (series_defs_state or []) if s.get("key") in keys_present]
+
         react_component = {
             "component": "AnomalyVisualizationDashboard",
             "props": {
                 "chartData": chart_data,
                 "anomalies": anomalies,
                 "stats": stats,
-                "title": "זיהוי אנומליות בקליקים"
+                "title": "זיהוי אנומליות בקליקים",
+                "chartConfig": {
+                    "height": 400,
+                    "series": filtered_series
+                },
+                "tableMarkdown": table_markdown
             }
         }
         
