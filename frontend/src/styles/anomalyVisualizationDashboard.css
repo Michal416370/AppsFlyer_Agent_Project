@@ -59,3 +59,22 @@
   font-size: 32px;
   font-weight: 700;
 }
+
+/* Table styles moved from inline */
+.anomaly-table {
+  margin-top: 20px;
+}
+
+.anomaly-table-title {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.anomaly-table-content {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  overflow-x: auto;
+}

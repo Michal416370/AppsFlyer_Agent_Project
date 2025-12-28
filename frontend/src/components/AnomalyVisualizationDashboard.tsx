@@ -31,6 +31,7 @@ interface Props {
   stats?: Partial<Stats>;
   title?: string;
   chartConfig?: { height?: number };
+  tableMarkdown?: string;
 }
 
 const AnomalyVisualizationDashboard: React.FC<Props> = ({
@@ -38,7 +39,8 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
   anomalies = [],
   stats,
   title = "Anomaly Visualization",
-  chartConfig = {}
+  chartConfig = {},
+  tableMarkdown = ""
 }) => {
   const computedStats: Stats = {
     total: stats?.total ?? anomalies.length,
@@ -84,6 +86,13 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
       </div>
 
       <AnomalyChart data={chartData} anomalies={anomalies} config={chartConfig} />
+
+      {tableMarkdown && (
+        <div className="anomaly-table">
+          <h3 className="anomaly-table-title">טבלת תצוגה</h3>
+          <pre className="anomaly-table-content">{tableMarkdown}</pre>
+        </div>
+      )}
     </div>
   );
 };
