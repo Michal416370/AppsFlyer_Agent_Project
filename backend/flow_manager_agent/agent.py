@@ -178,6 +178,32 @@ class RootAgent(BaseAgent):
                 return
 
             # ---------------------------
+            # # 🔥 Anomaly flow
+            # # ---------------------------
+            # if intent_type == "anomaly":
+            #     logging.info("🔥 [RootAgent] Detected anomaly intent, running anomaly_agent")
+                
+            #     # Run anomaly_agent
+                # async for event in anomaly_agent.run_async(context):
+                #     yield event
+                
+                # # Get anomaly results
+                # anomaly_result = session_state.get("anomaly_result", {})
+                # logging.info(f"🔥 [RootAgent] anomaly_result: {json.dumps(anomaly_result, indent=2)[:500]}")
+                
+                # # Check if we have anomalies to visualize
+                # if anomaly_result.get("status") == "ok" and anomaly_result.get("anomalies"):
+                #     # Run react_visual_agent to create the UI
+                #     session_state["visualization_payload"] = anomaly_result
+                #     async for event in react_visual_agent.run_async(context):
+                #         yield event
+                #     return
+                # else:
+                #     # No anomalies found
+                #     yield _text_event(anomaly_result.get("message", "לא נמצאו חריגות."))
+                #     return
+
+            # ---------------------------
             # Normal analytics / retrieval flow
             # ---------------------------
 

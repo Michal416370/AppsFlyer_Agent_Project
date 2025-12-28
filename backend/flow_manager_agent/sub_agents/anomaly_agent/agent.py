@@ -1,3 +1,5 @@
+print("🔥 LOADING anomaly_agent FILE 🔥")
+
 from typing import AsyncGenerator
 from pathlib import Path
 import logging
@@ -8,7 +10,7 @@ from google.adk.agents import BaseAgent
 from google.adk.events import Event
 from google.genai import types
 
-from backend.bq import BQClient
+from AppsFlyerAgent.backend.bq import BQClient
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +188,10 @@ class AnomalyAgent(BaseAgent):
     # ------------------------------------------------------------------ #
 
     async def _run_async_impl(self, context) -> AsyncGenerator[Event, None]:
+
+        # בדיקה זמנית
+        yield _text_event("DEBUG anomaly_agent STARTED")
+
         """
         מה שנקרא מתוך RootAgent כשעושים אנומליה-flow ב-ADK web.
         """
@@ -199,8 +205,13 @@ class AnomalyAgent(BaseAgent):
         # החזרת התוצאות כטקסט + JSON לשימוש react_visual_agent
         yield _text_event(res["message"])
 
+        # 🔍 DEBUG – לראות בדיוק מה חוזר מה-anomaly_agent
+        yield _text_event(f"DEBUG anomaly_result = {res}")
+
         return
 
 
 # instance for easy import in RootAgent
 anomaly_agent = AnomalyAgent()
+
+print("DEBUG anomaly_agent INSTANCE CREATED:", anomaly_agent)

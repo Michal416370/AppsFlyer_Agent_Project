@@ -13,7 +13,13 @@ load_dotenv(dotenv_path)
 
 PROJECT_ID = "practicode-2025"
 BQ_LOCATION = "EU"
-BQ_DATA_FILE_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+BQ_DATA_FILE_PATH_RAW = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+# אם הנתיב יחסי, בנה אותו יחסית לתיקיית backend
+if BQ_DATA_FILE_PATH_RAW and not os.path.isabs(BQ_DATA_FILE_PATH_RAW):
+    BQ_DATA_FILE_PATH = str(Path(__file__).parent / BQ_DATA_FILE_PATH_RAW)
+else:
+    BQ_DATA_FILE_PATH = BQ_DATA_FILE_PATH_RAW
 
 
 class BQClient:

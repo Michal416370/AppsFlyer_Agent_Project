@@ -1,4 +1,4 @@
-from .bq import BQClient
+from AppsFlyerAgent.backend.bq import BQClient
 
 def run_bigquery(query: str):
     """

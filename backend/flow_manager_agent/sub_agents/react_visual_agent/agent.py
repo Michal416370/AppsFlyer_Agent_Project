@@ -31,6 +31,7 @@ class ReactVisualizationAgent(BaseAgent):
         super().__init__(name="react_visual_agent")
 
     async def _run_async_impl(self, context) -> AsyncGenerator[Event, None]:
+        yield _text_event("🚨 REACT VISUAL AGENT WAS CALLED 🚨")
         """
         מריצה ממשק ויזואליזציה ל-ADK.
         """
@@ -59,6 +60,8 @@ class ReactVisualizationAgent(BaseAgent):
         # STEP 2 — בדיקה אם יש אנומליות בכלל
         # ============================================================
         anomalies = anomaly_data.get("anomalies", [])
+        # זמנית לדיבוג
+        yield _text_event(f"DEBUG anomalies count = {len(anomalies)}")
         
         if not anomalies:
             yield _text_event("✅ לא נמצאו אנומליות בנתונים.")
