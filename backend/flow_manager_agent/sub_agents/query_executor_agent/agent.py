@@ -1,5 +1,5 @@
-from backend.bq import BQClient
-from backend.flow_manager_agent.utils.cache import CacheService, normalize_intent_key
+from AppsFlyerAgent.backend.bq import BQClient
+from ...utils.cache import CacheService, normalize_intent_key
 import pandas as pd
 import logging
 import json
