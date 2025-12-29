@@ -1,14 +1,21 @@
-from typing import AsyncGenerator
+from __future__ import annotations
+
+from typing import AsyncGenerator, Any
+from datetime import datetime, timedelta
+import json
+import logging
+import re
+import time
+
+import pytz
 from google.adk.agents import BaseAgent
 from google.adk.events import Event
 from google.genai import types
 
 from .utils.json_utils import clean_json as _clean_json
-from .utils.cache import normalize_intent_key  # ✅ stable intent key
 
 # --- Sub Agents ---
 from .sub_agents.intent_analyzer_agent import intent_analyzer_agent, BASE_NLU_SPEC
-from .sub_agents.anomaly_agent import anomaly_agent
 from .sub_agents.react_visual_agent import react_visual_agent
 from .sub_agents.clarifier_orchestrator_agent import clarifier_agent
 from .sub_agents.protected_query_builder_agent import protected_query_builder_agent
@@ -16,85 +23,139 @@ from .sub_agents.query_executor_agent import query_executor_agent
 from .sub_agents.response_insights_agent import response_insights_agent
 from .sub_agents.human_response_agent import human_response_agent
 
-import json
-import re
-import logging
-from datetime import datetime, timedelta, date
-import pytz
-import time
 
-
-
-
+# =========================
+# Helpers
+# =========================
 def _text_event(message: str) -> Event:
     return Event(
         author="assistant",
-        content=types.Content(parts=[types.Part(text=message)])
+        content=types.Content(parts=[types.Part(text=message)]),
     )
 
 
-# ============================================================
-# DATA AVAILABILITY WINDOW (internal only; user won't see it)
-# ============================================================
-DATA_AVAILABLE_FROM = date(2025, 10, 24)
-DATA_AVAILABLE_TO = date(2025, 10, 26)
+def _markdown_table_to_rows(md: str) -> list[dict[str, Any]]:
+    if not md or "|" not in md:
+        return []
+    lines = [ln.strip() for ln in md.strip().splitlines() if ln.strip()]
+    if len(lines) < 3:
+        return []
+
+    header = [h.strip() for h in lines[0].strip("|").split("|")]
+    rows: list[dict[str, Any]] = []
+    for ln in lines[2:]:
+        if "|" not in ln:
+            continue
+        cells = [c.strip() for c in ln.strip("|").split("|")]
+        if len(cells) != len(header):
+            continue
+        row = dict(zip(header, cells))
+
+        # coerce numeric if possible
+        for k in ("hr", "clicks", "baseline_6h", "anomaly_score"):
+            if k in row:
+                try:
+                    row[k] = float(str(row[k]).replace(",", ""))
+                except Exception:
+                    pass
+
+        rows.append(row)
+
+    return rows
 
 
-def _parse_iso_date(s: str) -> date | None:
-    """Parse YYYY-MM-DD safely."""
-    if not s or not isinstance(s, str):
-        return None
-    try:
-        return datetime.strptime(s, "%Y-%m-%d").date()
-    except Exception:
-        return None
+def _sanitize_key(s: str) -> str:
+    s = re.sub(r"[^a-zA-Z0-9_]+", "_", (s or "").strip())
+    s = re.sub(r"_+", "_", s).strip("_")
+    return s[:40] or "series"
 
 
-def _requested_range_outside_available(parsed_intent: dict) -> tuple[bool, str]:
+def _build_multi_series_chart(
+    rows: list[dict[str, Any]],
+    hour_col: str = "hr",
+    series_col: str = "media_source",
+    value_col: str = "clicks",
+):
     """
-    Returns:
-      (is_outside, message_to_user_if_outside)
-    User message includes ONLY requested date/range (not availability window).
+    Builds:
+    - chart_data: [{hour: "10", <seriesKey1>: 123, <seriesKey2>: 55, ...}, ...]
+    - series_defs: [{key: "facebook_ads", name: "facebook_ads"}, ...]
     """
-    dr = (parsed_intent or {}).get("date_range")
-    if not isinstance(dr, dict):
-        return (False, "")
+    if not rows:
+        return [], []
 
-    start_s = dr.get("start_date")
-    end_s = dr.get("end_date")
+    series_names = sorted({str(r.get(series_col, "Unknown")) for r in rows})
+    series_map = {name: _sanitize_key(name) for name in series_names}
 
-    start_d = _parse_iso_date(start_s)
-    end_d = _parse_iso_date(end_s)
+    by_hour: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        hr = r.get(hour_col, "")
+        if isinstance(hr, (int, float)):
+            hr_str = str(int(hr))
+        else:
+            hr_str = str(hr)
 
-    # If date_range exists but parsing failed, let the pipeline handle it
-    if not start_d and not end_d:
-        return (False, "")
+        if not hr_str:
+            continue
 
-    # Normalize single-date cases
-    if start_d and not end_d:
-        end_d = start_d
-    if end_d and not start_d:
-        start_d = end_d
+        ms = str(r.get(series_col, "Unknown"))
+        key = series_map.get(ms, _sanitize_key(ms))
 
-    # Outside internal window?
-    if start_d < DATA_AVAILABLE_FROM or end_d > DATA_AVAILABLE_TO:
-        requested_txt = (
-            start_d.strftime("%Y-%m-%d")
-            if start_d == end_d
-            else f"{start_d.strftime('%Y-%m-%d')} עד {end_d.strftime('%Y-%m-%d')}"
+        val = r.get(value_col, 0)
+        try:
+            val = float(val)
+            if val != val or val < 0:
+                val = 0.0
+        except Exception:
+            val = 0.0
+
+        if hr_str not in by_hour:
+            by_hour[hr_str] = {"hour": hr_str}
+        by_hour[hr_str][key] = val
+
+    def _hour_sort(x: str):
+        try:
+            return int(x)
+        except Exception:
+            return x
+
+    chart_data = [by_hour[h] for h in sorted(by_hour.keys(), key=_hour_sort)]
+    series_defs = [{"key": series_map[name], "name": name} for name in series_names]
+    return chart_data, series_defs
+
+
+def _rows_to_anomalies(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Extract anomalies for marker dots + stats.
+    Requires is_anomaly column to be true-ish.
+    """
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        flag = str(r.get("is_anomaly", "")).strip().lower()
+        is_anom = flag in ("true", "1", "yes", "y", "t")
+
+        if not is_anom:
+            continue
+
+        hr = r.get("hr")
+        hr_str = str(int(hr)) if isinstance(hr, (int, float)) else str(hr or "")
+
+        out.append(
+            {
+                "name": str(r.get("media_source", "Unknown")),
+                "anomaly_type": "click_spike",  # adapt if you have click_drop etc.
+                "event_hour": hr_str,
+                "clicks": float(r.get("clicks", 0) or 0),
+                "avg_clicks": float(r.get("baseline_6h", 0) or 0),
+            }
         )
-
-        msg = (
-            f"❌ אין לי מידע על התאריך/טווח שביקשת: **{requested_txt}**.\n"
-            f"אם תרצי, נסי לשאול על תאריך אחר."
-        )
-        return (True, msg)
-
-    return (False, "")
+    return out
 
 
+# =========================
+# RootAgent
+# =========================
 class RootAgent(BaseAgent):
-
     def __init__(self):
         super().__init__(name="root_agent")
 
@@ -110,28 +171,36 @@ class RootAgent(BaseAgent):
         day_before = today - timedelta(days=2)
 
         dynamic_date_block = f"""
-            # SYSTEM DATE DIRECTIVE — DO NOT IGNORE
-            Current real date: {today.strftime("%Y-%m-%d")}
+# SYSTEM DATE DIRECTIVE — DO NOT IGNORE
+Current real date: {today.strftime("%Y-%m-%d")}
 
-            Natural-language date mapping:
-            - "today" / "היום" → {today}
-            - "yesterday" / "אתמול" → {yesterday}
-            - "שלשום" → {day_before}
+Natural-language date mapping:
+- "today" / "היום" → {today}
+- "yesterday" / "אתמול" → {yesterday}
+- "שלשום" → {day_before}
 
-            Dates without year (24.10, 25/10, 25.10):
-            → ALWAYS use year {today.year}.
+Dates without year (24.10, 25/10, 25.10):
+→ ALWAYS use year {today.year}.
 
-            If interpreted date is in the future → return future-date error.
+If interpreted date is in the future → return future-date error.
 
-            IMPORTANT OVERRIDE FOR ANOMALY:
-            - If intent is "anomaly" AND the user did NOT explicitly mention a date or date range,
-            you MUST set:
-            date_range = {{ "start_date": "2025-10-24", "end_date": "2025-10-26" }}
-            - Do NOT default to "yesterday" in anomaly when no explicit date was provided.
+IMPORTANT OVERRIDE FOR ANOMALY:
+- If intent is "anomaly" AND the user did NOT explicitly mention a date or date range,
+  you MUST set:
+  date_range = {{ "start_date": "2025-10-24", "end_date": "2025-10-26" }}
+- Do NOT default to "yesterday" in anomaly when no explicit date was provided.
 
-            # END OF DATE DIRECTIVE
-        """
-        intent_analyzer_agent.instruction = dynamic_date_block + BASE_NLU_SPEC
+# END OF DATE DIRECTIVE
+""".strip()
+
+        logging.info(f"[TIME] system local now: {datetime.now()}")
+        logging.info(f"[TIME] utc now: {datetime.utcnow()}")
+        logging.info(f"[TIME] tz now (Asia/Jerusalem): {datetime.now(pytz.timezone('Asia/Jerusalem'))}")
+        logging.info(f"[TIME] tz today: {today}")
+        logging.info(f"[TIME] system time.tzname={time.tzname}")
+        logging.info(f"[TIME] dynamic_date_block:\n{dynamic_date_block}")
+
+        intent_analyzer_agent.instruction = dynamic_date_block + "\n\n" + BASE_NLU_SPEC
 
         # ============================================================
         # STEP 1 — Intent Analyzer
@@ -165,49 +234,12 @@ class RootAgent(BaseAgent):
         # STEP 4 — OK → run pipeline
         # ============================================================
         if status == "ok":
-            parsed_intent = intent_analysis.get("parsed_intent", {})
+            parsed_intent = intent_analysis.get("parsed_intent", {}) or {}
             intent_type = parsed_intent.get("intent")
 
-    
             # ---------------------------
-            # ✅ Date availability guard (user sees only requested date)
-            # ---------------------------
-            outside, msg = _requested_range_outside_available(parsed_intent)
-            if outside:
-                yield _text_event(msg)
-                return
-
-            # ---------------------------
-            # # 🔥 Anomaly flow
-            # # ---------------------------
-            # if intent_type == "anomaly":
-            #     logging.info("🔥 [RootAgent] Detected anomaly intent, running anomaly_agent")
-                
-            #     # Run anomaly_agent
-                # async for event in anomaly_agent.run_async(context):
-                #     yield event
-                
-                # # Get anomaly results
-                # anomaly_result = session_state.get("anomaly_result", {})
-                # logging.info(f"🔥 [RootAgent] anomaly_result: {json.dumps(anomaly_result, indent=2)[:500]}")
-                
-                # # Check if we have anomalies to visualize
-                # if anomaly_result.get("status") == "ok" and anomaly_result.get("anomalies"):
-                #     # Run react_visual_agent to create the UI
-                #     session_state["visualization_payload"] = anomaly_result
-                #     async for event in react_visual_agent.run_async(context):
-                #         yield event
-                #     return
-                # else:
-                #     # No anomalies found
-                #     yield _text_event(anomaly_result.get("message", "לא נמצאו חריגות."))
-                #     return
-
-            # ---------------------------
-            # Normal analytics / retrieval flow
-            # ---------------------------
-
             # SQL Builder
+            # ---------------------------
             async for event in protected_query_builder_agent.run_async(context):
                 yield event
 
@@ -218,15 +250,9 @@ class RootAgent(BaseAgent):
                 yield _text_event(built_query.get("message", "SQL Builder error"))
                 return
 
-            # ✅ stable intent_key based on parsed_intent (not SQL formatting)
-            try:
-                stable_intent_key = normalize_intent_key(parsed_intent=parsed_intent)
-                built_query["intent_key"] = stable_intent_key
-                logging.info(f"🟣 [RootAgent] Added parsed_intent-based intent_key (len={len(stable_intent_key)})")
-            except Exception as e:
-                logging.warning(f"🟡 [RootAgent] Failed to create parsed_intent intent_key, fallback to SQL. err={e}")
-
-            # Query Executor
+            # ---------------------------
+            # Query Executor (Python function, not agent)
+            # ---------------------------
             logging.info("🔴 [RootAgent] Calling query_executor_agent with built_query")
             sql_result = query_executor_agent(built_query)
             logging.info(f"🔴 [RootAgent] query_executor_agent returned: {json.dumps(sql_result, indent=2)[:500]}")
@@ -234,27 +260,71 @@ class RootAgent(BaseAgent):
             session_state["execution_result"] = sql_result
             logging.info("🔴 [RootAgent] Set execution_result in session_state")
 
-            # Insights Agent
+            # ---------------------------
+            # ✅ ANOMALY → React visualization path
+            # ---------------------------
+            if intent_type == "anomaly" and sql_result.get("status") == "ok":
+                md = (sql_result.get("result") or "").strip()
+                rows = _markdown_table_to_rows(md)
+
+                # Debug logs: verify table parsing
+                logging.info(f"[ANOM] markdown_len={len(md)} parsed_rows={len(rows)}")
+                if rows:
+                    logging.info(f"[ANOM] sample keys={list(rows[0].keys())}")
+                    logging.info(f"[ANOM] sample is_anomaly={rows[0].get('is_anomaly')}")
+
+                chart_data, series_defs = _build_multi_series_chart(
+                    rows,
+                    hour_col="hr",
+                    series_col="media_source",
+                    value_col="clicks",
+                )
+
+                anomalies = _rows_to_anomalies(rows)
+                logging.info(f"[ANOM] extracted anomalies={len(anomalies)} chart_points={len(chart_data)} series={len(series_defs)}")
+
+                # Save what react_visual_agent expects
+                session_state["anomaly_table_markdown"] = md
+                session_state["anomaly_timeseries_multi"] = chart_data
+
+                # IMPORTANT: react_visual_agent has a "no anomalies" branch that checks anomaly_timeseries
+                session_state["anomaly_timeseries"] = chart_data
+
+                session_state["anomaly_series_defs"] = series_defs
+                session_state["anomaly_result"] = {"anomalies": anomalies}
+
+                logging.info("🔥 [RootAgent] anomaly intent → calling react_visual_agent")
+                async for event in react_visual_agent.run_async(context):
+                    yield event
+                return
+
+            # ---------------------------
+            # Insights Agent (non-anomaly path)
+            # ---------------------------
             session_state["insights_payload"] = {"execution_result": sql_result}
             logging.info("🔴 [RootAgent] Running response_insights_agent...")
             async for event in response_insights_agent.run_async(context):
                 yield event
 
+            # ---------------------------
             # Human Response Agent
+            # ---------------------------
             insights_result_raw = session_state.get("insights_result", {})
             insights_result = self._parse_built_query(insights_result_raw)
 
             logging.info("🔴 [RootAgent] Calling human_response_agent (Python function)...")
             final_response = human_response_agent(sql_result, insights_result)
+            logging.info(f"🔴 [RootAgent] Final response length: {len(final_response)}")
 
             yield _text_event(final_response)
-
             logging.info("🔴 [RootAgent] Analytics flow completed")
             return
 
+        # fallback (shouldn't reach)
         yield _text_event("I couldn't understand the request.")
         return
 
+    # ===== JSON Parse Helper =====
     def _parse_built_query(self, raw):
         if isinstance(raw, dict):
             return raw

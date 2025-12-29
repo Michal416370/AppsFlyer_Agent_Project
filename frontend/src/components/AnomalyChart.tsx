@@ -103,7 +103,7 @@ const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} 
             series.map((s, idx) => (
               <Line
                 key={s.key}
-                type="natural"
+                type="monotone"
                 dataKey={s.key}
                 stroke={s.color || ["#e53e3e","#38a169","#3182ce","#d69e2e","#805ad5"][idx % 5]}
                 strokeWidth={3}
@@ -117,7 +117,7 @@ const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} 
             <>
               {/* Fallback single-series rendering */}
               <Area
-                type="natural"
+                type="monotone"
                 dataKey="clicks"
                 stroke="#667eea"
                 strokeWidth={3}
@@ -126,7 +126,7 @@ const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} 
                 animationDuration={800}
               />
               <Line
-                type="natural"
+                type="monotone"
                 dataKey="baseline"
                 stroke="#48bb78"
                 strokeWidth={2}
