@@ -196,6 +196,10 @@ class AnomalyAgent(BaseAgent):
         מה שנקרא מתוך RootAgent כשעושים אנומליה-flow ב-ADK web.
         """
         state = context.session.state
+        logger.info(f"[react_visual_agent] state keys: {list(state.keys())[:50]}")
+        anomaly_result = state.get("anomaly_result")
+        logger.info(f"[react_visual_agent] anomaly_result type={type(anomaly_result)}")
+        logger.info(f"[react_visual_agent] anomaly_result preview={str(anomaly_result)[:300]}")
 
         res = self.run_daily()
 

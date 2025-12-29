@@ -334,8 +334,8 @@ ANOMALY METHOD CONTROL
 
 
 "select *
-from `practicode-2025.clicks_data_prac.media_source_anomalies_3`
-LIMIT 5" .
+from `practicode-2025.clicks_data_prac.clicks_with_anomalies`
+LIMIT 10" .
 
 ============================
 OUTPUT FORMAT (MANDATORY)
