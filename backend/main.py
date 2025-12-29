@@ -4,13 +4,15 @@ from pydantic import BaseModel
 
 from .flow_manager_agent.agent import root_agent
 from .bq import BQClient
+
 from google.adk.apps import App
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
-from google.genai import types
 from google.adk.utils.context_utils import Aclosing
+from google.genai import types
 
 import logging
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,10 +31,7 @@ app.add_middleware(
 # ---- יצירת ADK App ו-Runner ----
 adk_app = App(name="appsflyer_agent", root_agent=root_agent)
 session_service = InMemorySessionService()
-runner = Runner(
-    app=adk_app,
-    session_service=session_service,
-)
+runner = Runner(app=adk_app, session_service=session_service)
 
 # קבועים למזהים
 USER_ID = "default_user"
@@ -47,63 +46,100 @@ except Exception as e:
     logger.warning(f"Failed to initialize BigQuery: {e}")
     bq_client = None
 
+
 # ---- בדיקת חיים ----
 @app.get("/health")
 def health():
     return {"ok": True}
+
 
 # ---- Request schema ----
 class ChatRequest(BaseModel):
     message: str
 
 
-# ---- Helper: run agent (UPDATED) ----
+def _extract_text_from_event(event) -> Optional[str]:
+    """
+    Extracts text from an ADK Event safely.
+    ADK events may contain multiple parts and not always in parts[0].
+    """
+    if not event or not getattr(event, "content", None):
+        return None
+
+    parts = getattr(event.content, "parts", None) or []
+    if not parts:
+        return None
+
+    texts: list[str] = []
+    for p in parts:
+        t = getattr(p, "text", None)
+        if isinstance(t, str) and t.strip():
+            texts.append(t)
+
+    if not texts:
+        return None
+
+    return "\n".join(texts).strip()
+
+
+# ---- Helper: run agent ----
 async def run_agent(message: str):
+    # 1) get/create session
     session = await session_service.get_session(
         app_name=adk_app.name,
         user_id=USER_ID,
-        session_id=SESSION_ID
+        session_id=SESSION_ID,
     )
-
     if not session:
         session = await session_service.create_session(
             app_name=adk_app.name,
             user_id=USER_ID,
-            session_id=SESSION_ID
+            session_id=SESSION_ID,
         )
 
+    # 2) build user content
     content = types.Content(
         role="user",
-        parts=[types.Part(text=message)]
+        parts=[types.Part(text=message)],
     )
 
     last_text = None
     final_root_text = None
+    final_react_text = None
 
+    # 3) run and consume stream
     async with Aclosing(
         runner.run_async(
             user_id=USER_ID,
             session_id=SESSION_ID,
-            new_message=content
+            new_message=content,
         )
     ) as agen:
         async for event in agen:
-            if not event or not event.content or not event.content.parts:
+            txt = _extract_text_from_event(event)
+            if not txt:
                 continue
 
-            part = event.content.parts[0]
+            last_text = txt
+            author = getattr(event, "author", None)
+            logger.info(f"[run_agent] author={author} prefix={txt[:80]!r}")
 
-            if getattr(part, "text", None):
-                last_text = part.text
-                logger.debug(f"event author={event.author}")
+            # Debug (אפשר להוריד אחרי שתעבוד)
+            logger.debug(f"event.author={author} text_prefix={txt[:60]}")
 
-                # מחזירים רק תשובה של root_agent
-                if event.author == "root_agent":
-                    final_root_text = part.text
+            # ✅ prefer react component if it appears anywhere
+            if isinstance(txt, str) and txt.startswith("__REACT_COMPONENT__"):
+                final_react_text = txt
 
+            # keep latest root text too
+            if author == "root_agent":
+                final_root_text = txt
+
+    # 4) return with priority: react > root > last
+    if final_react_text:
+        return final_react_text
     if final_root_text:
         return final_root_text
-
     if last_text:
         return last_text
 
@@ -121,7 +157,7 @@ async def chat(req: ChatRequest):
                     session_id=SESSION_ID,
                     user_id=USER_ID,
                     role="user",
-                    message=req.message
+                    message=req.message,
                 )
             except Exception as e:
                 logger.error(f"Failed to save user message: {e}")
@@ -136,7 +172,7 @@ async def chat(req: ChatRequest):
                     session_id=SESSION_ID,
                     user_id=USER_ID,
                     role="assistant",
-                    message=str(response)
+                    message=str(response),
                 )
             except Exception as e:
                 logger.error(f"Failed to save assistant message: {e}")
@@ -144,6 +180,5 @@ async def chat(req: ChatRequest):
         return response
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        logger.exception("Chat endpoint failed")
         raise HTTPException(status_code=500, detail=str(e))
