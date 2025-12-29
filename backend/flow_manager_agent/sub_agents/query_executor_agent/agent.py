@@ -1,4 +1,4 @@
-from AppsFlyerAgent.backend.bq import BQClient
+from ....bq import BQClient
 from ...utils.cache import CacheService, normalize_intent_key
 import pandas as pd
 import logging
@@ -47,6 +47,7 @@ def run_bigquery(query: str, intent_key: str | None = None):
         result = {
             "status": "ok",
             "result": markdown,
+            "rows": rows,                 # ✅ הוספה
             "message": None,
             "row_count": len(rows),
             "executed_sql": query,
