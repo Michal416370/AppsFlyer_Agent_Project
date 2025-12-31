@@ -129,6 +129,34 @@ B) Else if dim_count == 0:
    source_table = `practicode-2025.clicks_data_prac.partial_encoded_clicks_part`
    uses_event_date = false
 
+C-NEW) Additional special case — no dimensions but identifier filter(s):
+   # If there are NO dimensions requested (dim_count == 0) but the filters
+   # contain ONLY a single identifier that matches one of the agg tables
+   # (app_id, media_source, or site_id) AND a date range is present, prefer
+   # the corresponding hourly aggregate table. This handles queries like
+   # "how many clicks for media_source_90 on 2025-10-24" or
+   # "how many clicks for media_source_90 at hr=10 on 2025-10-24" where
+   # the user supplied identifier(s) as filters but did not request a
+   # dimension list.
+   If dim_count == 0 AND has_date_range == true:
+
+        If filters has ONLY {"app_id"}:
+            source_table = `practicode-2025.clicks_data_prac.hourly_clicks_by_app`
+            uses_event_date = true
+
+        Else if filters has ONLY {"media_source"}:
+            source_table = `practicode-2025.clicks_data_prac.hourly_clicks_by_media_source`
+            uses_event_date = true
+
+        Else if filters has ONLY {"site_id"}:
+            source_table = `practicode-2025.clicks_data_prac.hourly_clicks_by_site`
+            uses_event_date = true
+
+        Else:
+            # Other filters or multiple identifiers => raw
+            source_table = `practicode-2025.clicks_data_prac.partial_encoded_clicks_part`
+            uses_event_date = false
+
 C0) Special case — ONLY hour breakdown:
    If dims == ["hr"]:
 
