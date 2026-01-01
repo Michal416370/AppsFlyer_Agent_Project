@@ -283,5 +283,6 @@ def human_response_agent(execution_result: dict, insights_result: dict) -> str:
         return response
 
     except Exception as e:
+        
         logger.exception("❌ human_response_agent failed")
         return f"Error while formatting the response: {e}"
