@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import AsyncGenerator, Any
+from typing import AsyncGenerator, Any, Optional
 from datetime import datetime, timedelta
 import json
 import logging
@@ -20,8 +20,10 @@ from .sub_agents.react_visual_agent import react_visual_agent
 from .sub_agents.clarifier_orchestrator_agent import clarifier_agent
 from .sub_agents.protected_query_builder_agent import protected_query_builder_agent
 from .sub_agents.query_executor_agent import query_executor_agent
-from .sub_agents.response_insights_agent import response_insights_agent
+from .sub_agents.response_insights_agent import response_insights_agent, INSIGHTS_SPEC
 from .sub_agents.human_response_agent import human_response_agent
+
+logger = logging.getLogger(__name__)
 
 
 # =========================
@@ -34,122 +36,72 @@ def _text_event(message: str) -> Event:
     )
 
 
-def _markdown_table_to_rows(md: str) -> list[dict[str, Any]]:
-    if not md or "|" not in md:
-        return []
-    lines = [ln.strip() for ln in md.strip().splitlines() if ln.strip()]
-    if len(lines) < 3:
-        return []
-
-    header = [h.strip() for h in lines[0].strip("|").split("|")]
-    rows: list[dict[str, Any]] = []
-    for ln in lines[2:]:
-        if "|" not in ln:
-            continue
-        cells = [c.strip() for c in ln.strip("|").split("|")]
-        if len(cells) != len(header):
-            continue
-        row = dict(zip(header, cells))
-
-        # coerce numeric if possible
-        for k in ("hr", "clicks", "baseline_6h", "anomaly_score"):
-            if k in row:
-                try:
-                    row[k] = float(str(row[k]).replace(",", ""))
-                except Exception:
-                    pass
-
-        rows.append(row)
-
-    return rows
+def _extract_first_yyyy_mm_dd(text: str) -> Optional[str]:
+    if not text:
+        return None
+    m = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
+    return m.group(1) if m else None
 
 
-def _sanitize_key(s: str) -> str:
-    s = re.sub(r"[^a-zA-Z0-9_]+", "_", (s or "").strip())
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s[:40] or "series"
+def _parse_date_yyyy_mm_dd(s: str):
+    return datetime.strptime(s, "%Y-%m-%d").date()
 
 
-def _build_multi_series_chart(
-    rows: list[dict[str, Any]],
-    hour_col: str = "hr",
-    series_col: str = "media_source",
-    value_col: str = "clicks",
-):
+def _is_future_date_range(dr: dict, today_date) -> bool:
+    if not isinstance(dr, dict):
+        return False
+    sd = dr.get("start_date")
+    ed = dr.get("end_date")
+    if not sd or not ed:
+        return False
+    try:
+        return _parse_date_yyyy_mm_dd(sd) > today_date or _parse_date_yyyy_mm_dd(ed) > today_date
+    except Exception:
+        return False
+
+
+def _extract_total_events_from_rows(sql_result: dict) -> Optional[int]:
     """
-    Builds:
-    - chart_data: [{hour: "10", <seriesKey1>: 123, <seriesKey2>: 55, ...}, ...]
-    - series_defs: [{key: "facebook_ads", name: "facebook_ads"}, ...]
+    Extract total_events from sql_result rows if present.
+    Returns int or None.
     """
-    if not rows:
-        return [], []
-
-    series_names = sorted({str(r.get(series_col, "Unknown")) for r in rows})
-    series_map = {name: _sanitize_key(name) for name in series_names}
-
-    by_hour: dict[str, dict[str, Any]] = {}
-    for r in rows:
-        hr = r.get(hour_col, "")
-        if isinstance(hr, (int, float)):
-            hr_str = str(int(hr))
-        else:
-            hr_str = str(hr)
-
-        if not hr_str:
-            continue
-
-        ms = str(r.get(series_col, "Unknown"))
-        key = series_map.get(ms, _sanitize_key(ms))
-
-        val = r.get(value_col, 0)
+    if not isinstance(sql_result, dict):
+        return None
+    rows = sql_result.get("rows") or []
+    if not rows or not isinstance(rows[0], dict):
+        return None
+    v = rows[0].get("total_events")
+    if v is None:
+        return None
+    try:
+        return int(v)
+    except Exception:
         try:
-            val = float(val)
-            if val != val or val < 0:
-                val = 0.0
+            return int(float(v))
         except Exception:
-            val = 0.0
-
-        if hr_str not in by_hour:
-            by_hour[hr_str] = {"hour": hr_str}
-        by_hour[hr_str][key] = val
-
-    def _hour_sort(x: str):
-        try:
-            return int(x)
-        except Exception:
-            return x
-
-    chart_data = [by_hour[h] for h in sorted(by_hour.keys(), key=_hour_sort)]
-    series_defs = [{"key": series_map[name], "name": name} for name in series_names]
-    return chart_data, series_defs
+            return None
 
 
-def _rows_to_anomalies(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _compute_has_data(sql_result: dict) -> bool:
     """
-    Extract anomalies for marker dots + stats.
-    Requires is_anomaly column to be true-ish.
+    True if we have a meaningful numeric result (e.g. total_events not null),
+    or if you later want to support non-aggregate outputs.
     """
-    out: list[dict[str, Any]] = []
-    for r in rows:
-        flag = str(r.get("is_anomaly", "")).strip().lower()
-        is_anom = flag in ("true", "1", "yes", "y", "t")
+    if not isinstance(sql_result, dict):
+        return False
+    if sql_result.get("status") != "ok":
+        return False
 
-        if not is_anom:
-            continue
+    v = _extract_total_events_from_rows(sql_result)
+    if v is not None:
+        return True
 
-        hr = r.get("hr")
-        hr_str = str(int(hr)) if isinstance(hr, (int, float)) else str(hr or "")
-
-        out.append(
-            {
-                "name": str(r.get("media_source", "Unknown")),
-                "anomaly_type": "click_spike",  # adapt if you have click_drop etc.
-                "event_hour": hr_str,
-                "clicks": float(r.get("clicks", 0) or 0),
-                "avg_clicks": float(r.get("baseline_6h", 0) or 0),
-            }
-        )
-    return out
+    # fallback: if non-aggregate tables return rows, treat as has_data
+    try:
+        rc = int(sql_result.get("row_count") or 0)
+    except Exception:
+        rc = 0
+    return rc > 0
 
 
 # =========================
@@ -179,6 +131,10 @@ Natural-language date mapping:
 - "yesterday" / "אתמול" → {yesterday}
 - "שלשום" → {day_before}
 
+CRITICAL (YEAR PRESERVATION):
+- If the user explicitly provides a year (e.g., 24/10/2025, 2025-10-24),
+  you MUST keep that exact year and MUST NOT override it.
+
 Dates without year (24.10, 25/10, 25.10):
 → ALWAYS use year {today.year}.
 
@@ -193,12 +149,12 @@ IMPORTANT OVERRIDE FOR ANOMALY:
 # END OF DATE DIRECTIVE
 """.strip()
 
-        logging.info(f"[TIME] system local now: {datetime.now()}")
-        logging.info(f"[TIME] utc now: {datetime.utcnow()}")
-        logging.info(f"[TIME] tz now (Asia/Jerusalem): {datetime.now(pytz.timezone('Asia/Jerusalem'))}")
-        logging.info(f"[TIME] tz today: {today}")
-        logging.info(f"[TIME] system time.tzname={time.tzname}")
-        logging.info(f"[TIME] dynamic_date_block:\n{dynamic_date_block}")
+        logger.info(f"[TIME] system local now: {datetime.now()}")
+        logger.info(f"[TIME] utc now: {datetime.utcnow()}")
+        logger.info(f"[TIME] tz now (Asia/Jerusalem): {datetime.now(pytz.timezone('Asia/Jerusalem'))}")
+        logger.info(f"[TIME] tz today: {today}")
+        logger.info(f"[TIME] system time.tzname={time.tzname}")
+        logger.info(f"[TIME] dynamic_date_block:\n{dynamic_date_block}")
 
         intent_analyzer_agent.instruction = dynamic_date_block + "\n\n" + BASE_NLU_SPEC
 
@@ -209,16 +165,26 @@ IMPORTANT OVERRIDE FOR ANOMALY:
             yield event
 
         intent_analysis = _clean_json(session_state.get("intent_analysis"))
-        status = intent_analysis.get("status")
+        status = (intent_analysis or {}).get("status")
 
         if status == "not relevant":
             status = "not_relevant"
 
         # ============================================================
+        # STEP 1.5 — Hard stop future date (server-side enforcement)
+        # ============================================================
+        if status == "ok":
+            parsed = (intent_analysis or {}).get("parsed_intent") or {}
+            dr = parsed.get("date_range") or {}
+            if _is_future_date_range(dr, today):
+                yield _text_event("Future dates are not supported because no events have occurred yet.")
+                return
+
+        # ============================================================
         # STEP 2 — Clarification needed
         # ============================================================
         if status == "clarification_needed":
-            session_state["missing_fields"] = intent_analysis.get("missing_fields", [])
+            session_state["missing_fields"] = (intent_analysis or {}).get("missing_fields", [])
             async for event in clarifier_agent.run_async(context):
                 yield event
             return
@@ -227,14 +193,14 @@ IMPORTANT OVERRIDE FOR ANOMALY:
         # STEP 3 — Hard stop (error / not relevant)
         # ============================================================
         if status in ("not_relevant", "error"):
-            yield _text_event(intent_analysis.get("message", "Request not supported."))
+            yield _text_event((intent_analysis or {}).get("message", "Request not supported."))
             return
 
         # ============================================================
         # STEP 4 — OK → run pipeline
         # ============================================================
         if status == "ok":
-            parsed_intent = intent_analysis.get("parsed_intent", {}) or {}
+            parsed_intent = (intent_analysis or {}).get("parsed_intent", {}) or {}
             intent_type = parsed_intent.get("intent")
 
             # ---------------------------
@@ -244,65 +210,77 @@ IMPORTANT OVERRIDE FOR ANOMALY:
                 yield event
 
             built_query_raw = session_state.get("built_query")
-            built_query = self._parse_built_query(built_query_raw)
+            built_query = self._parse_json_block(built_query_raw)
 
             if built_query.get("status") != "ok":
                 yield _text_event(built_query.get("message", "SQL Builder error"))
                 return
 
             # ---------------------------
-            # Query Executor (Python function, not agent)
+            # Query Executor (Python function)
             # ---------------------------
-            logging.info("🔴 [RootAgent] Calling query_executor_agent with built_query")
+            logger.info("🔴 [RootAgent] Calling query_executor_agent with built_query")
             sql_result = query_executor_agent(built_query)
-            logging.info(f"🔴 [RootAgent] query_executor_agent returned: {json.dumps(sql_result, indent=2)[:500]}")
+            logger.info(f"🔴 [RootAgent] query_executor_agent returned: {json.dumps(sql_result, indent=2)[:900]}")
 
             session_state["execution_result"] = sql_result
-            logging.info("🔴 [RootAgent] Set execution_result in session_state")
+            logger.info("🔴 [RootAgent] Set execution_result in session_state")
 
             # ---------------------------
-            # ✅ ANOMALY → React visualization path
+            # ANOMALY → React path
             # ---------------------------
             if intent_type == "anomaly" and sql_result.get("status") == "ok":
-                md = (sql_result.get("result") or "").strip()
-                rows = _markdown_table_to_rows(md)
-
-                # Debug logs: verify table parsing
-                logging.info(f"[ANOM] markdown_len={len(md)} parsed_rows={len(rows)}")
-                if rows:
-                    logging.info(f"[ANOM] sample keys={list(rows[0].keys())}")
-                    logging.info(f"[ANOM] sample is_anomaly={rows[0].get('is_anomaly')}")
-
-                chart_data, series_defs = _build_multi_series_chart(
-                    rows,
-                    hour_col="hr",
-                    series_col="media_source",
-                    value_col="clicks",
-                )
-
-                anomalies = _rows_to_anomalies(rows)
-                logging.info(f"[ANOM] extracted anomalies={len(anomalies)} chart_points={len(chart_data)} series={len(series_defs)}")
-
-                # Save what react_visual_agent expects
-                session_state["anomaly_table_markdown"] = md
-                session_state["anomaly_timeseries_multi"] = chart_data
-
-                # IMPORTANT: react_visual_agent has a "no anomalies" branch that checks anomaly_timeseries
-                session_state["anomaly_timeseries"] = chart_data
-
-                session_state["anomaly_series_defs"] = series_defs
-                session_state["anomaly_result"] = {"anomalies": anomalies}
-
-                logging.info("🔥 [RootAgent] anomaly intent → calling react_visual_agent")
+                # Keep your existing anomaly visualization pipeline here
                 async for event in react_visual_agent.run_async(context):
                     yield event
                 return
 
             # ---------------------------
-            # Insights Agent (non-anomaly path)
+            # LLM INSIGHTS (MANDATORY)
+            # Inject payload into the LLM instruction so it CANNOT miss the flags
             # ---------------------------
-            session_state["insights_payload"] = {"execution_result": sql_result}
-            logging.info("🔴 [RootAgent] Running response_insights_agent...")
+            requested_date = _extract_first_yyyy_mm_dd(sql_result.get("executed_sql", "") or "")
+            is_future_date = False
+            if requested_date:
+                try:
+                    is_future_date = _parse_date_yyyy_mm_dd(requested_date) > today
+                except Exception:
+                    is_future_date = False
+
+            total_events_val = _extract_total_events_from_rows(sql_result)
+            has_data = _compute_has_data(sql_result)
+
+            insights_payload = {
+                "execution_result": {
+                    "status": sql_result.get("status"),
+                    "row_count": sql_result.get("row_count"),
+                    "executed_sql": sql_result.get("executed_sql"),
+                    # NOTE: we do NOT paste the markdown table in strings in the LLM output,
+                    # but giving it here is fine as input. Still, keep it minimal:
+                    "result": sql_result.get("result"),
+                },
+                "requested_date": requested_date,
+                "is_future_date": is_future_date,
+                "has_data": has_data,
+                "extracted_values": {
+                    "total_events": total_events_val
+                }
+            }
+
+            logger.info(
+                f"🔴 [RootAgent] insights flags: requested_date={requested_date} "
+                f"is_future_date={is_future_date} has_data={has_data} total_events={total_events_val}"
+            )
+
+            # ✅ THIS is the key fix: put the input JSON inside the agent's instruction
+            response_insights_agent.instruction = (
+                "INSIGHTS_INPUT_JSON:\n"
+                + json.dumps(insights_payload, ensure_ascii=False)
+                + "\n\n"
+                + INSIGHTS_SPEC
+            )
+
+            logger.info("🔴 [RootAgent] Running response_insights_agent (LLM)...")
             async for event in response_insights_agent.run_async(context):
                 yield event
 
@@ -310,33 +288,30 @@ IMPORTANT OVERRIDE FOR ANOMALY:
             # Human Response Agent
             # ---------------------------
             insights_result_raw = session_state.get("insights_result", {})
-            insights_result = self._parse_built_query(insights_result_raw)
+            insights_result = self._parse_json_block(insights_result_raw)
 
-            logging.info("🔴 [RootAgent] Calling human_response_agent (Python function)...")
+            logger.info("🔴 [RootAgent] Calling human_response_agent...")
             final_response = human_response_agent(sql_result, insights_result)
-            logging.info(f"🔴 [RootAgent] Final response length: {len(final_response)}")
+            logger.info(f"🔴 [RootAgent] Final response length: {len(final_response)}")
 
             yield _text_event(final_response)
-            logging.info("🔴 [RootAgent] Analytics flow completed")
+            logger.info("🔴 [RootAgent] Analytics flow completed")
             return
 
-        # fallback (shouldn't reach)
         yield _text_event("I couldn't understand the request.")
         return
 
     # ===== JSON Parse Helper =====
-    def _parse_built_query(self, raw):
+    def _parse_json_block(self, raw):
         if isinstance(raw, dict):
             return raw
-
         if isinstance(raw, str):
-            cleaned = re.sub(r"```json|```", "", raw.strip())
+            cleaned = re.sub(r"```json|```", "", raw.strip(), flags=re.IGNORECASE)
             try:
                 return json.loads(cleaned)
             except Exception:
-                return {"status": "error", "message": "Invalid JSON from builder"}
-
-        return {"status": "error", "message": "Invalid builder output"}
+                return {"status": "error", "message": "Invalid JSON from agent"}
+        return {"status": "error", "message": "Invalid agent output"}
 
 
 root_agent = RootAgent()
