@@ -40,7 +40,9 @@
 
 .new-chat-btn {
     background: #FFFFFF;
-    border: none;
+    border: 1px solid var(--af-purple);
+    outline: 1px solid white;
+    outline-offset: 1px;
     color: var(--af-purple);
     font-weight: 600;
     padding: 0.75rem 1rem;
@@ -197,7 +199,7 @@
 /* רכיבי UI / גרפים של הבוט */
 .assistant-full {
     width: 100%;
-    margin: 1.5rem 0;
+    margin: 0;
 }
 
 /* לוודא שהגרף עצמו מתפרס */
@@ -281,6 +283,27 @@
     color: white;
     font-size: 18px;
     cursor: pointer;
+}
+
+/* ===== עיצוב Scrollbar ===== */
+/* כללי לכל scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: gray
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--af-purple);
+    /* border-radius: 6px; */
+    cursor: pointer;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--af-purple);
 }
 
 /* ===== רספונסיבי ===== */

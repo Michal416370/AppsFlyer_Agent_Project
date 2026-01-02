@@ -116,6 +116,8 @@ export const Chat = () => {
                     <li>App Performance Overview</li>
                     <li>Traffic Anomalies</li>
                     <li>Site ID Breakdown</li>
+                    <li>Invalid vs Valid Clicks</li>
+                    <li>Events Over Time</li>
                 </ul>
             </aside>
 
