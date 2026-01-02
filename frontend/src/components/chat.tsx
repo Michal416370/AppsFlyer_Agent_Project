@@ -21,21 +21,19 @@ const ChatInput = ({
     disabled?: boolean;
 }) => (
     <div className="chat-input">
-        <div className="chat-content">
-            <input
-                value={value}
-                placeholder="Ask anything"
-                onChange={e => onChange(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && !disabled && onSend()}
+        <input
+            value={value}
+            placeholder="Ask anything"
+            onChange={e => onChange(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && !disabled && onSend()}
+        />
+        <button onClick={onSend} disabled={disabled} className="send-button">
+            <img
+                src="/images/appsflyer_icon.png"
+                alt="Send"
+                className="send-icon"
             />
-            <button onClick={onSend} disabled={disabled} className="send-button">
-                <img
-                    src="/images/appsflyer_icon.png"
-                    alt="Send"
-                    className="send-icon"
-                />
-            </button>
-        </div>
+        </button>
     </div>
 );
 
@@ -103,6 +101,21 @@ export const Chat = () => {
                     <li className="active">Clicks by media source</li>
                     <li>Anomaly detection</li>
                     <li>Total events by app id</li>
+                    <li>Growth Metrics</li>
+                    <li>Acquisition Overview</li>
+                    <li>Fraud Signals Overview</li>
+                    <li>Media Source Comparison</li>
+                    <li>Top Events by Volume</li>
+                    <li>Performance Snapshot</li>
+                    <li>Suspicious Activity</li>
+                    <li>Events Funnel</li>
+                    <li>Attribution Insights</li>
+                    <li>Abnormal Click Patterns</li>
+                    <li>Events by App ID</li>
+                    <li>Partner Click Quality</li>
+                    <li>App Performance Overview</li>
+                    <li>Traffic Anomalies</li>
+                    <li>Site ID Breakdown</li>
                 </ul>
             </aside>
 
@@ -128,43 +141,50 @@ export const Chat = () => {
 
                 {/* מצב שיחה */}
                 {!isEmpty && (
-                    <>
+                    <div className="chat-wrapper">
                         <div className="chat-messages">
-                            <div className="chat-content">
-                                {messages.map((msg, i) => (
-                                    <div className={`chat-message ${msg.role}`}>
-                                        {typeof msg.content === "string" ? (
-                                            <div className="bubble">
-                                                {msg.content}
-                                            </div>
-                                        ) : (
-                                            <div className="assistant-full">
-                                                <UIRenderer node={msg.content} />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-
-                                {isLoading && (
-                                    <div className="chat-message assistant">
+                            {messages.map((msg, i) => (
+                                <div className={`chat-message ${msg.role}`}>
+                                    {typeof msg.content === "string" ? (
                                         <div className="bubble">
-                                            <TypingLoader />
+                                            {msg.content}
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <div className="assistant-full">
+                                            <UIRenderer node={msg.content} />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
 
-                                {/* אלמנט נסתר לגלילה אוטומטית */}
-                                <div ref={messagesEndRef} />
-                            </div>
+                            {isLoading && (
+                                <div className="chat-message assistant">
+                                    <div className="bubble">
+                                        <TypingLoader />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* אלמנט נסתר לגלילה אוטומטית */}
+                            <div ref={messagesEndRef} />
                         </div>
 
-                        <ChatInput
-                            value={input}
-                            onChange={setInput}
-                            disabled={isLoading}
-                            onSend={sendMessage}
-                        />
-                    </>
+                        <div className="chat-input">
+                            <input
+                                value={input}
+                                placeholder="Ask anything"
+                                onChange={e => setInput(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && !isLoading && sendMessage()}
+                            />
+                            <button onClick={sendMessage} disabled={isLoading} className="send-button">
+                                <img
+                                    src="/images/appsflyer_icon.png"
+                                    alt="Send"
+                                    className="send-icon"
+                                />
+                            </button>
+                        </div>
+                    </div>
                 )}
             </main>
         </div>

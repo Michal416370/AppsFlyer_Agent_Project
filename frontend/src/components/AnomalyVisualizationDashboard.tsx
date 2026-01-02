@@ -98,10 +98,10 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
 
       {/* ✅ Option 1: גרף נפרד לכל media_source */}
       {seriesList.length > 0 ? (
-        <div style={{ display: "grid", gap: 16 }}>
+        <div className="anomaly-charts-grid">
           {seriesList.map((s: any) => (
             <div key={s.key} className="anomaly-chart-block">
-              <h3 className="anomaly-chart-subtitle" style={{ margin: "8px 0" }}>
+              <h3 className="anomaly-chart-subtitle">
                 {s.name}
               </h3>
 

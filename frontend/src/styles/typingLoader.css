@@ -1,13 +1,13 @@
 .typing-loader {
   display: flex;
-  gap: 6px;
+  gap: 0.375rem;
   align-items: center;
-  padding: 4px 2px;
+  padding: 0.25rem 0.125rem;
 }
 
 .typing-loader span {
-  width: 8px;
-  height: 8px;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 50%;
   animation: pulse 1.4s infinite ease-in-out both;
 }

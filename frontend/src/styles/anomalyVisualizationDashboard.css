@@ -1,7 +1,7 @@
 .anomaly-dashboard {
-  padding: 24px;
+  padding: 1rem;
   background: #ffffff;
-  border-radius: 20px;
+  border-radius: 1.25rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   max-width: 100%;
   width: 100%;
@@ -10,7 +10,7 @@
 }
 
 .anomaly-title {
-  margin: 0 0 20px 0;
+  margin: 0 0 1.25rem 0;
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -21,16 +21,16 @@
 
 .anomaly-stats-container {
   display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
 .anomaly-stat-card {
   flex: 1;
-  min-width: 150px;
-  padding: 16px 20px;
-  border-radius: 12px;
+  min-width: 10rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
   color: white;
 }
 
@@ -52,7 +52,7 @@
 .anomaly-stat-label {
   font-size: 14px;
   opacity: 0.9;
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .anomaly-stat-value {
@@ -62,11 +62,11 @@
 
 /* Table styles moved from inline */
 .anomaly-table {
-  margin-top: 20px;
+  margin-top: 1.25rem;
 }
 
 .anomaly-table-title {
-  margin-top: 20px;
+  margin-top: 1.25rem;
   font-size: 18px;
   font-weight: 600;
 }
@@ -74,7 +74,21 @@
 .anomaly-table-content {
   background: #f7fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
   overflow-x: auto;
+}
+
+/* Chart grid and blocks */
+.anomaly-charts-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+/* .anomaly-chart-block {
+  /* Chart block styles can be added here if needed
+} */
+
+.anomaly-chart-subtitle {
+  margin: 0.5rem 0;
 }
