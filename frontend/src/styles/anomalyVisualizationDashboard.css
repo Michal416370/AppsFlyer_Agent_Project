@@ -13,10 +13,7 @@
   margin: 0 0 1.25rem 0;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--af-purple);
 }
 
 .anomaly-stats-container {
@@ -35,18 +32,21 @@
 }
 
 .anomaly-stat-card.total {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: var(--af-purple);
+  color: white;
+  box-shadow: none;
 }
 
 .anomaly-stat-card.spike {
-  background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
-  box-shadow: 0 4px 12px rgba(252, 129, 129, 0.3);
+  background: var(--af-cyan);
+  color: var(--af-purple);
+  box-shadow: 0 4px 12px rgba(200, 242, 255, 0.3);
 }
 
 .anomaly-stat-card.drop {
-  background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
-  box-shadow: 0 4px 12px rgba(79, 209, 197, 0.3);
+  background: linear-gradient(135deg, #ffcae7 0%, #F5D5E8 100%);
+  color: var(--af-purple);
+  box-shadow: 0 4px 12px rgba(255, 202, 231, 0.3);
 }
 
 .anomaly-stat-label {
@@ -72,7 +72,7 @@
 }
 
 .anomaly-table-content {
-  background: #f7fafc;
+  background: var(--af-purple);
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   padding: 0.75rem;
@@ -85,10 +85,33 @@
   gap: 1rem;
 }
 
-/* .anomaly-chart-block {
-  /* Chart block styles can be added here if needed
-} */
+.anomaly-chart-block {
+  opacity: 1;
+}
+
+.anomaly-chart-block.chart-appear {
+  animation: slideIn 0.5s ease-out;
+}
 
 .anomaly-chart-subtitle {
   margin: 0.5rem 0;
+}
+
+.anomaly-hour-info {
+  margin: 0 0 0.75rem 0;
+  font-size: 13px;
+  color: var(--af-blue);
+  font-weight: 500;
+}
+
+/* Chart animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

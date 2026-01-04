@@ -70,20 +70,20 @@ const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} 
             </linearGradient>
           </defs>
           
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" opacity={0.5} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" opacity={0.2} />
           
           <XAxis
             dataKey="hour"
             tickFormatter={formatHour}
             allowDuplicatedCategory={true}
             minTickGap={4}
-            stroke="#718096"
-            style={{ fontSize: "12px", fontWeight: 500 }}
+            stroke="#ffffff"
+            style={{ fontSize: "12px", fontWeight: 500, fill: "#ffffff" }}
           />
           
           <YAxis
-            stroke="#718096"
-            style={{ fontSize: "12px", fontWeight: 500 }}
+            stroke="#ffffff"
+            style={{ fontSize: "12px", fontWeight: 500, fill: "#ffffff" }}
             tickFormatter={(value) => value.toLocaleString()}
             domain={[0, 'dataMax']}
           />
@@ -105,12 +105,14 @@ const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} 
                 key={s.key}
                 type="monotone"
                 dataKey={s.key}
-                stroke={s.color || ["#e53e3e","#38a169","#3182ce","#d69e2e","#805ad5"][idx % 5]}
-                strokeWidth={3}
+                stroke={s.color || ["#ffcae7","#F5D5E8","#ffc0e0","#ffe0f0","#ffb0d8"][idx % 5]}
+                strokeWidth={2.5}
                 dot={false}
                 connectNulls={true}
                 name={s.name}
-                animationDuration={600}
+                isAnimationActive={true}
+                animationDuration={2000}
+                animationEasing="ease-in-out"
               />
             ))
           ) : (
@@ -119,11 +121,13 @@ const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} 
               <Area
                 type="monotone"
                 dataKey="clicks"
-                stroke="#667eea"
-                strokeWidth={3}
+                stroke="#ffcae7"
+                strokeWidth={2.5}
                 fill="url(#colorClicks)"
                 name="Clicks"
-                animationDuration={800}
+                isAnimationActive={true}
+                animationDuration={1500}
+                animationEasing="ease-in-out"
               />
               <Line
                 type="monotone"
@@ -133,7 +137,9 @@ const AnomalyChart: React.FC<Props> = ({ data = [], anomalies = [], config = {} 
                 strokeDasharray="8 4"
                 dot={false}
                 name="Baseline"
-                animationDuration={800}
+                isAnimationActive={true}
+                animationDuration={1500}
+                animationEasing="ease-in-out"
               />
             </>
           )}

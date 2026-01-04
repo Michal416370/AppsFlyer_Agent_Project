@@ -149,7 +149,25 @@ export const Chat = () => {
                                 <div className={`chat-message ${msg.role}`}>
                                     {typeof msg.content === "string" ? (
                                         <div className="bubble">
-                                            {msg.content}
+                                            {msg.content.split('\n').map((line, idx) => {
+                                                // Check if line contains **value**
+                                                const parts = line.split(/(\*\*.*?\*\*)/g);
+                                                const isEmpty = !line.trim();
+                                                return (
+                                                    <div key={idx} className={isEmpty ? "paragraph-break" : "text-line"}>
+                                                        {parts.map((part, partIdx) => {
+                                                            if (part.startsWith('**') && part.endsWith('**')) {
+                                                                return (
+                                                                    <span key={partIdx} className="highlight-value">
+                                                                        {part.slice(2, -2)}
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return <span key={partIdx}>{part}</span>;
+                                                        })}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="assistant-full">

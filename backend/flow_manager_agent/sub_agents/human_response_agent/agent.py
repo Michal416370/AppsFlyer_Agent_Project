@@ -142,13 +142,14 @@ def _parse_first_row_as_kv(md_table: str) -> dict:
 def _format_kv_block(kv: dict) -> str:
     """
     Formats dict into:
-    total_events: 107051
-    hr: 2
+    **total_events: 107051**
+    **hr: 2**
+    Wraps entire key:value in ** for bold formatting
     """
     out = []
     for k, v in kv.items():
         if k and v is not None and str(v).strip():
-            out.append(f"{k}: {v}")
+            out.append(f"**{k}: {v}**")
     return "\n".join(out).strip()
 
 

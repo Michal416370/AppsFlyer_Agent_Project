@@ -2,6 +2,7 @@
     --af-pink: #ffcae7;
     --af-pink-light: #F5D5E8;
     --af-blue: #00C2FF;
+    --af-cyan: rgb(200, 242, 255);
     --af-purple: #220D4E;
     --af-gray: #F5F6FA;
 }
@@ -223,6 +224,23 @@
     box-sizing: border-box;
 }
 
+/* שורות טקסט רגילות */
+.bubble .text-line {
+    margin-bottom: 0.25rem;
+}
+
+/* רווח נוסף בין פסקאות */
+.bubble .paragraph-break {
+    margin-bottom: 1rem;
+}
+
+/* הדגשת ערכים חשובים */
+.highlight-value {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: var(--af-purple);
+}
+
 .chat-message.user .bubble {
     background: var(--af-purple);
     color: white;
@@ -244,7 +262,7 @@
 .chat-message.assistant .bubble,
 .chat-message.assistant .assistant-full {
     background: white;
-    color: #111;
+    color: var(--af-purple);
     width: 100%;
     box-sizing: border-box;
     /* Mirrored bubble shape: one square-ish corner on the left */

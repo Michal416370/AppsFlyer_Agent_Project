@@ -234,7 +234,7 @@ BASE_NLU_SPEC = r"""
       → return:
         {
           "status": "not_relevant",
-          "message": "Happy to help! Want me to look into more data?"
+          "message": "Happy to help!\nWant me to look into more data?"
         }
 
     Gibberish also → not_relevant with the same message.
