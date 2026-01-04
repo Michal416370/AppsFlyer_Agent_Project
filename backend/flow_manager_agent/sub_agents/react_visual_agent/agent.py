@@ -374,7 +374,7 @@ class ReactVisualizationAgent(BaseAgent):
                         "rows": raw_rows,  # ✅ שולחים טבלה גולמית
                         "anomalies": [],
                         "stats": {"total": 0, "spike_count": 0, "drop_count": 0, "max_deviation": 0},
-                        "title": "קליקים לפי שעה (מהטבלה)"
+                        "title": "Clicks per hour"
                     }
                 }
                 json_str = json.dumps(react_component, ensure_ascii=False)

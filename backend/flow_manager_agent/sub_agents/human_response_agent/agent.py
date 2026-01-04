@@ -68,18 +68,18 @@ def _is_empty_markdown_table(md: str) -> bool:
 
 
 def _beautify_error_message(user_date: Optional[str]) -> str:
-    # ✅ New rule: future dates
+    # Future dates
     if _is_future_date(user_date):
         return "Future dates are not supported because no events have occurred yet."
 
-    # ✅ New rule: any date outside the supported set
+    # Any date outside the supported set
     if user_date and not _is_supported_date(user_date):
         return (
             f"I don't have information for that date ({user_date}). "
             "If you'd like, I can help you with another date."
         )
 
-    # Existing behavior for supported dates (no data found)
+    # Supported dates but no data found
     if user_date:
         return (
             f"No data was found for the date you requested ({user_date}).\n"
@@ -154,8 +154,7 @@ def _format_kv_block(kv: dict) -> str:
 
 
 def human_response_agent(execution_result: dict, insights_result: dict) -> str:
-    logger.info("🟣" * 40)
-    logger.info("🟣 human_response_agent (Python function) called")
+    logger.info("human_response_agent called")
 
     try:
         status = (execution_result or {}).get("status", "")
@@ -165,7 +164,7 @@ def human_response_agent(execution_result: dict, insights_result: dict) -> str:
 
         requested_date = _extract_requested_date_from_sql(executed_sql)
 
-        # ✅ New early exits (do NOT touch anything else)
+        # Early exits
         if _is_future_date(requested_date):
             return "Future dates are not supported because no events have occurred yet."
         if requested_date and not _is_supported_date(requested_date):
@@ -257,7 +256,6 @@ def human_response_agent(execution_result: dict, insights_result: dict) -> str:
             if kv:
                 parts.append(_format_kv_block(kv))
             else:
-                # fallback if parsing failed
                 parts.append(data_table.strip())
             parts.append("")
 
@@ -266,24 +264,21 @@ def human_response_agent(execution_result: dict, insights_result: dict) -> str:
             parts.append(final_text.strip())
             parts.append("")
 
-        # next steps
+        # next steps (NO EMOJI)
         followups: list[str] = []
         for q in suggested_questions:
             if isinstance(q, str) and q.strip():
                 followups.append(q.strip())
 
         if followups:
-            parts.append("💡 Next steps you can try:")
+            parts.append("Next steps you can try:")
             for item in followups[:3]:
                 parts.append(f"• {item}")
 
         response = "\n".join(parts).strip()
-        logger.info(f"✅ Response built successfully ({len(response)} chars)")
-        logger.info(f"Response preview:\n{response[:500]}...")
-        logger.info("🟣" * 40)
+        logger.info("Response built successfully (%d chars)", len(response))
         return response
 
     except Exception as e:
-        
-        logger.exception("❌ human_response_agent failed")
+        logger.exception("human_response_agent failed")
         return f"Error while formatting the response: {e}"
