@@ -516,6 +516,7 @@ class ReactVisualizationAgent(BaseAgent):
         react_component = {
             "component": "AnomalyVisualizationDashboard",
             "props": {
+                "rows": raw_rows,  # ✅ תמיד שולחים את כל הנתונים לטבלה
                 "chartData": chart_data,
                 "anomalies": anomalies,
                 "stats": stats,
