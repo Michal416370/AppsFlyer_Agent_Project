@@ -65,6 +65,43 @@ function formatHourLabel(hour: any): string {
   return s;
 }
 
+function formatAnomalyDateTime(hour: any): string {
+  if (!hour) return "";
+  const s = String(hour);
+  // Format: 2025-10-26T22:00:00Z -> 26/10/25 22:00
+  if (s.includes("T")) {
+    const date = s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(2, 4);
+    const time = s.slice(11, 16);
+    return date + " " + time;
+  }
+  return s;
+}
+
+function formatColumnName(col: string): string {
+  // Format h_20251024_00 -> 00:00
+  const hourMatch = col.match(/^h_\d{8}_(\d{2})$/);
+  if (hourMatch) {
+    return hourMatch[1] + ":00";
+  }
+  
+  return col
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function formatDateTime(value: any): string {
+  if (!value) return "";
+  const s = String(value);
+  // Format: 2025-10-26T22:00:00+00:00 -> 26/10/25 22:00
+  if (s.includes("T")) {
+    const date = s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(2, 4);
+    const time = s.slice(11, 16);
+    return date + " " + time;
+  }
+  return s;
+}
+
 const AnomalyVisualizationDashboard: React.FC<Props> = ({
   rows = [],
   chartData = [],
@@ -89,7 +126,9 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
 
   // progressive reveal of per-source charts (your existing UX)
   const [visibleCount, setVisibleCount] = useState(0);
+  const [showTable, setShowTable] = useState(false);
   const lastChartRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (seriesList.length === 0) return;
@@ -97,8 +136,9 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
     setVisibleCount(1);
     const timers: number[] = [];
 
+    // Each chart appears 1500ms after the previous one starts
     for (let i = 1; i < seriesList.length; i++) {
-      const timer = window.setTimeout(() => setVisibleCount(i + 1), i * 1000);
+      const timer = window.setTimeout(() => setVisibleCount(i + 1), i * 1500);
       timers.push(timer);
     }
 
@@ -112,6 +152,25 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
       }, 100);
     }
   }, [visibleCount]);
+
+  // Show table 1 second after all charts are done
+  useEffect(() => {
+    if (seriesList.length > 0 && visibleCount === seriesList.length) {
+      const timer = window.setTimeout(() => {
+        setShowTable(true);
+      }, 1000);
+      return () => window.clearTimeout(timer);
+    }
+  }, [visibleCount, seriesList.length]);
+
+  // Scroll to table when it appears
+  useEffect(() => {
+    if (showTable && tableRef.current) {
+      window.setTimeout(() => {
+        tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [showTable]);
 
   const computedStats: Stats = {
     total: finalAnomalies.length || stats?.total || 0,
@@ -135,7 +194,7 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
 
   return (
     <div className="anomaly-dashboard">
-      <h2 className="anomaly-title">{title}</h2>
+      <h2 className="anomaly-title">Clicks per hour (Graphs)</h2>
 
       {/* Stats Cards */}
       <div className="anomaly-stats-container">
@@ -157,11 +216,17 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
 
       {/* Option 1: Separate chart per media_source */}
       {seriesList.length > 0 ? (
-        <div className="anomaly-charts-grid">
+        <>
+          <div className="anomaly-charts-grid">
           {seriesList.slice(0, visibleCount).map((s: any, index: number) => {
             const sourceAnomalies = finalAnomalies.filter((a) => a.name === s.name);
             const anomalyHour =
-              sourceAnomalies.length > 0 ? formatHourLabel(sourceAnomalies[0].event_hour) : null;
+              sourceAnomalies.length > 0 ? formatAnomalyDateTime(sourceAnomalies[0].event_hour) : null;
+
+            // Check if this series has any data
+            const hasData = finalChartData.some((point: any) => point[s.key] !== undefined && point[s.key] !== null);
+            
+            if (!hasData) return null; // Skip charts with no data
 
             return (
               <div
@@ -187,43 +252,28 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
               </div>
             );
           })}
-        </div>
+          </div>
+        </>
       ) : (
         // fallback: Clicks/Baseline single chart
         <AnomalyChart data={finalChartData} anomalies={finalAnomalies} config={finalChartConfig} />
       )}
 
       {/* ✅ Full Data Table (authoritative): renders from rows */}
-      {rows.length > 0 && (
-        <div className="anomaly-table">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              justifyContent: "space-between",
-              gap: 12
-            }}
-          >
-            <h3 className="anomaly-table-title">Full data table</h3>
+      {rows.length > 0 && showTable && (
+        <div className="anomaly-table" ref={tableRef}>
+          <div className="table-header">
+            <h3 className="anomaly-title anomaly-table-main-title">Clicks per hour (table)</h3>
 
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <div style={{ fontSize: 12, opacity: 0.85 }}>
+            <div className="table-controls">
+              <div className="table-row-count">
                 Showing {visibleRows.length.toLocaleString()} of {rows.length.toLocaleString()}
               </div>
 
               {rows.length > PAGE_SIZE && (
                 <button
                   onClick={() => setShowAllRows((v) => !v)}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    fontWeight: 600
-                  }}
+                  className="table-toggle-button"
                 >
                   {showAllRows ? "Show first 200" : "Show all"}
                 </button>
@@ -231,70 +281,40 @@ const AnomalyVisualizationDashboard: React.FC<Props> = ({
             </div>
           </div>
 
-          <div
-            style={{
-              overflow: "auto",
-              maxHeight: 420,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)"
-            }}
-          >
-            <table style={{ borderCollapse: "collapse", width: "max-content", minWidth: "100%" }}>
-              <thead
-                style={{
-                  position: "sticky",
-                  top: 0,
-                  background: "rgba(0,0,0,0.35)",
-                  backdropFilter: "blur(6px)",
-                  zIndex: 1
-                }}
-              >
-                <tr>
-                  {allColumns.map((col) => (
-                    <th
-                      key={col}
-                      style={{
-                        textAlign: "left",
-                        padding: "10px 12px",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        whiteSpace: "nowrap",
-                        borderBottom: "1px solid rgba(255,255,255,0.15)"
-                      }}
-                    >
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {visibleRows.map((r, idx) => (
-                  <tr key={idx}>
+          <div className="table-scroll-container">
+            <div className="table-scroll-inner">
+              <table className="data-table">
+                <thead>
+                  <tr>
                     {allColumns.map((col) => (
-                      <td
-                        key={col}
-                        style={{
-                          padding: "8px 12px",
-                          fontSize: 12,
-                          whiteSpace: "nowrap",
-                          borderBottom: "1px solid rgba(255,255,255,0.08)"
-                        }}
-                      >
-                        {r?.[col] == null ? "" : String(r[col])}
-                      </td>
+                      <th key={col}>
+                        {formatColumnName(col)}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {visibleRows.map((r, idx) => (
+                    <tr key={idx}>
+                      {allColumns.map((col) => (
+                        <td key={col}>
+                          {r?.[col] == null ? "" : 
+                           col === "anomaly_hour_ts" ? formatDateTime(r[col]) : String(r[col])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Optional legacy/debug markdown */}
           {tableMarkdown && (
-            <details style={{ marginTop: 12, opacity: 0.9 }}>
-              <summary style={{ cursor: "pointer", fontSize: 12 }}>Debug: markdown table</summary>
-              <pre className="anomaly-table-content" style={{ marginTop: 10 }}>
+            <details className="debug-details">
+              <summary className="debug-summary">Debug: markdown table</summary>
+              <pre className="anomaly-table-content debug-pre">
                 {tableMarkdown}
               </pre>
             </details>

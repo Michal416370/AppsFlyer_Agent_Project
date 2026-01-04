@@ -63,12 +63,21 @@
 /* Table styles moved from inline */
 .anomaly-table {
   margin-top: 1.25rem;
+  background: #ffe6f2;
+  padding: 1rem;
+  border-radius: 16px;
 }
 
 .anomaly-table-title {
   margin-top: 1.25rem;
   font-size: 18px;
   font-weight: 600;
+}
+
+.anomaly-table-main-title {
+  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 1rem !important;
 }
 
 .anomaly-table-content {
@@ -85,21 +94,27 @@
   gap: 1rem;
 }
 
+.anomaly-charts-title {
+  margin-top: 1.5rem;
+}
+
 .anomaly-chart-block {
   opacity: 1;
 }
 
 .anomaly-chart-block.chart-appear {
-  animation: slideIn 0.5s ease-out;
+  animation: slideIn 1s ease-out;
 }
 
 .anomaly-chart-subtitle {
   margin: 0.5rem 0;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .anomaly-hour-info {
   margin: 0 0 0.75rem 0;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--af-blue);
   font-weight: 500;
 }
@@ -114,4 +129,99 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* Table header */
+.table-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.table-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.table-row-count {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.table-toggle-button {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.table-toggle-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Table container */
+.table-scroll-container {
+  overflow: hidden;
+  max-height: 420px;
+  border-radius: 8px;
+  background: white;
+}
+
+.table-scroll-inner {
+  overflow: auto;
+  max-height: 420px;
+  background: white;
+}
+
+.data-table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--af-purple);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 1;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  border-bottom: 0.5px solid rgba(139, 92, 246, 0.3);
+  color: white;
+}
+
+.data-table td {
+  padding: 8px 12px;
+  font-size: 14px;
+  white-space: nowrap;
+  border-bottom: 0.5px solid rgba(139, 92, 246, 0.15);
+}
+
+/* Debug markdown section */
+.debug-details {
+  margin-top: 12px;
+  opacity: 0.9;
+}
+
+.debug-summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.debug-pre {
+  margin-top: 10px;
 }
