@@ -1,57 +1,57 @@
-# מדריך צילומי מסך - Screenshot Guide
-## איך לקחת צילומי מסך מושלמים של הבדיקות
+# Screenshot Guide - Screenshot Guide
+## How to Take Perfect Screenshots of Tests
 
 ---
 
-## 🎯 מה לצלם?
+## What to Screenshot?
 
-### 1. **הרצת הדמו** (הכי חשוב!)
-### 2. **תוצאות Pytest**
-### 3. **מבנה התיקיות**
-### 4. **קוד של בדיקה**
+### 1. **Running the Demo** (Most important!)
+### 2. **Pytest Results**
+### 3. **Folder Structure**
+### 4. **Test Code**
 
 ---
 
-## 📸 צילום 1: הדמו האינטראקטיבי
+## Screenshot 1: Interactive Demo
 
-### פקודה:
+### Command:
 ```powershell
 cd c:\Michal\Attempted_re_git\AppsFlyerAgent
 python tests\simple_demo.py
 ```
 
-### מה תראי:
+### What you'll see:
 ```
 ============================================================
-🧪 AppsFlyerAgent Testing Demo - דוגמאות בדיקות
+Testing Demo - Testing Examples
 ============================================================
 
-📋 דוגמה 1: בדיקת ניקוי וטיפול ב-JSON
+ Example 1: Testing JSON Cleaning and Handling
 ----------------------------------------------------------------------
   Test: Valid JSON
-  Status: ✅ PASS
+  Status: PASS
   ...
 ```
 
-### איך לצלם:
-1. הריצי את הפקודה
-2. המתיני שזה יסתיים (1-2 שניות)
-3. לחצי `Win + Shift + S` (Snipping Tool)
-4. בחרי את כל החלון
-5. שמרי בשם: `demo_output.png`
+### How to take the screenshot:
+1. Run the command
+2. Wait for it to finish (1-2 seconds)
+3. Press `Win + Shift + S` (Snipping Tool)
+4. Select the entire window
+5. Save as: `demo_output.png`
 
-**💡 טיפ:** צלמי את כל הפלט, כולל הסיכום בסוף!
+**Tip:** Capture the entire output, including the summary at the end!
 
 ---
 
-## 📸 צילום 2: תוצאות Pytest
+## Screenshot 2: Pytest Results
 
-### פקודה:
+### Command:
 ```powershell
 python -m pytest tests\test_json_utils.py tests\test_standalone.py -v
 ```
 
-### מה תראי:
+### What you'll see:
 ```
 ==================== test session starts =====================
 collected 20 items
@@ -62,29 +62,29 @@ tests/test_json_utils.py::TestJSONUtils::test_clean_json_with_markdown PASSED [ 
 ===================== 20 passed in 0.07s =====================
 ```
 
-### איך לצלם:
-1. הריצי את הפקודה
-2. כשזה מסתיים - צלמי `Win + Shift + S`
-3. שמרי בשם: `pytest_results.png`
+### How to take the screenshot:
+1. Run the command
+2. When it finishes - press `Win + Shift + S`
+3. Save as: `pytest_results.png`
 
-**💡 טיפ:** וודאי שרואים את ה-"20 passed" בסוף!
+**Tip:** Make sure you can see "20 passed" at the end!
 
 ---
 
-## 📸 צילום 3: מבנה תיקיית tests
+## Screenshot 3: tests Folder Structure
 
-### פקודה:
+### Command:
 ```powershell
 cd tests
 dir
 ```
 
-או יותר יפה:
+Or more nicely:
 ```powershell
 tree tests /F
 ```
 
-### מה תראי:
+### What you'll see:
 ```
 tests/
 ├── __init__.py
@@ -95,23 +95,23 @@ tests/
 └── README.md
 ```
 
-### איך לצלם:
-1. הריצי `dir` או `tree`
-2. צלמי את הפלט
-3. שמרי בשם: `tests_structure.png`
+### How to take the screenshot:
+1. Run `dir` or `tree`
+2. Capture the output
+3. Save as: `tests_structure.png`
 
 ---
 
-## 📸 צילום 4: קוד בדיקה ב-VS Code
+## Screenshot 4: Test Code in VS Code
 
-### מה לפתוח:
-פתחי את הקובץ: `tests\test_json_utils.py`
+### What to open:
+Open the file: `tests\test_json_utils.py`
 
-### מה לצלם:
-את הפונקציה:
+### What to capture:
+The function:
 ```python
 def test_clean_json_valid(self):
-    """בדיקה: JSON תקין"""
+    """Test: Valid JSON"""
     json_str = '{"status": "ok", "message": "Success"}'
     result = clean_json(json_str)
     

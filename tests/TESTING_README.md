@@ -1,68 +1,68 @@
-# 🧪 Quick Testing Guide
-## מדריך מהיר לבדיקות
+# Quick Testing Guide
+## Quick Testing Guide
 
 ---
 
-## 🚀 הרצה מהירה
+## Quick Run
 
-### דמו אינטראקטיבי (מומלץ להצגה!)
+### Interactive Demo (Recommended for presentation!)
 ```bash
 python tests\simple_demo.py
 ```
 
-### בדיקות Pytest מלאות
+### Full Pytest Tests
 ```bash
 python -m pytest tests\test_json_utils.py tests\test_standalone.py -v
 ```
 
-### סקריפט אוטומטי
+### Automatic Script
 ```bash
 .\quick_test.ps1
 ```
 
 ---
 
-## 📊 מה יש כאן
+## What's Here
 
 ```
-✅ 20 בדיקות אוטומטיות
-⚡ 0.07 שניות זמן ריצה
-📊 100% שיעור הצלחה
-🎯 4 תחומים מכוסים
+PASS 20 automated tests
+FAST 0.07 seconds runtime
+STATS 100% success rate
+TARGET 4 areas covered
 ```
 
 ---
 
-## 📁 מבנה התיקיות
+## Folder Structure
 
-### `tests/` - הבדיקות עצמן
-- **test_json_utils.py** - 5 בדיקות עיבוד JSON ✅
-- **test_standalone.py** - 15 בדיקות נוספות ✅
-- **simple_demo.py** - דמו אינטראקטיבי 🎬
-- **README.md** - מדריך הבדיקות המלא
+### `tests/` - The tests themselves
+- **test_json_utils.py** - 5 JSON processing tests
+- **test_standalone.py** - 15 more tests
+- **simple_demo.py** - Interactive demo
+- **README.md** - Full testing guide
 
-### `tests/documentation/` - תיעוד והצגה לספר
-- **PROJECT_BOOK_TESTING_CHAPTER.md** - פרק שלם (30+ עמודים) 📖
-- **PRESENTATION_SLIDES.md** - 24 שקפים למצגת 📊
-- **CODE_SNIPPETS_FOR_BOOK.md** - קטעי קוד מוכנים 💻
-- **HOW_TO_PRESENT_TESTS.md** - מדריך הצגה 📝
-- **TESTING_SUMMARY.md** - סיכום מפורט 📋
+### `tests/documentation/` - Documentation and presentation for book
+- **PROJECT_BOOK_TESTING_CHAPTER.md** - Full chapter (30+ pages)
+- **PRESENTATION_SLIDES.md** - 24 slides for presentation
+- **CODE_SNIPPETS_FOR_BOOK.md** - Ready code snippets
+- **HOW_TO_PRESENT_TESTS.md** - Presentation guide
+- **TESTING_SUMMARY.md** - Detailed summary
 
 ---
 
-## 📚 תיעוד מלא
+## Full Documentation
 
-### להרצת בדיקות:
+### To run tests:
 👉 [tests/README.md](tests/README.md)
 
-### להצגה בספר פרוייקט:
+### To present in project book:
 👉 [tests/documentation/README.md](tests/documentation/README.md)
 
 ---
 
-## 💡 דוגמאות מהירות
+## Quick Examples
 
-### בדיקת JSON:
+### JSON Test:
 ```python
 def test_clean_json_valid():
     json_str = '{"status": "ok"}'
@@ -70,26 +70,26 @@ def test_clean_json_valid():
     assert result["status"] == "ok"
 ```
 
-### בדיקת תאריך:
+### Date Test:
 ```python
-def test_parse_today_hebrew():
-    result = parse_date_hebrew("היום")
+def test_parse_today():
+    result = parse_date("today")
     assert result == datetime.now().date()
 ```
 
 ---
 
-## 🎯 למה להתחיל?
+## Where to Start?
 
-**רוצה להריץ בדיקות?**  
+**Want to run tests?**  
 → [tests/README.md](tests/README.md)
 
-**רוצה להציג בספר?**  
+**Want to present in book?**  
 → [tests/documentation/README.md](tests/documentation/README.md)
 
-**רוצה דמו מהיר?**  
+**Want a quick demo?**  
 → `python tests\simple_demo.py`
 
 ---
 
-**הכל מוכן ומאורגן! 🎉**
+**Everything is ready and organized!**

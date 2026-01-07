@@ -163,11 +163,11 @@ def test_missing_status(self):
 
 | Test Case | Input | Expected Output | Status |
 |-----------|-------|-----------------|--------|
-| Valid JSON | `'{"status": "ok"}'` | `{'status': 'ok'}` | ✅ PASS |
-| With Markdown | ` ```json\n{"status": "ok"}\n``` ` | `{'status': 'ok'}` | ✅ PASS |
-| With Text | `'Result: {"status": "ok"}'` | `{'status': 'ok'}` | ✅ PASS |
-| Invalid | `'Not JSON'` | `{}` | ✅ PASS |
-| Nested | `'{"data": {"items": []}}'` | Complex Dict | ✅ PASS |
+| Valid JSON | `'{"status": "ok"}'` | `{'status': 'ok'}` | PASS |
+| With Markdown | ` ```json\n{"status": "ok"}\n``` ` | `{'status': 'ok'}` | PASS |
+| With Text | `'Result: {"status": "ok"}'` | `{'status': 'ok'}` | PASS |
+| Invalid | `'Not JSON'` | `{}` | PASS |
+| Nested | `'{"data": {"items": []}}'` | Complex Dict | PASS |
 
 ---
 
@@ -175,12 +175,12 @@ def test_missing_status(self):
 
 | Input (Hebrew/English) | Expected Date | Result | Status |
 |------------------------|---------------|--------|--------|
-| "היום" | 2025-12-22 | 2025-12-22 | ✅ |
-| "today" | 2025-12-22 | 2025-12-22 | ✅ |
-| "אתמול" | 2025-12-21 | 2025-12-21 | ✅ |
-| "yesterday" | 2025-12-21 | 2025-12-21 | ✅ |
-| "שלשום" | 2025-12-20 | 2025-12-20 | ✅ |
-| "invalid" | None | None | ✅ |
+| "היום" | 2025-12-22 | 2025-12-22 | PASS |
+| "today" | 2025-12-22 | 2025-12-22 | PASS |
+| "אתמול" | 2025-12-21 | 2025-12-21 | PASS |
+| "yesterday" | 2025-12-21 | 2025-12-21 | PASS |
+| "שלשום" | 2025-12-20 | 2025-12-20 | PASS |
+| "invalid" | None | None | PASS |
 
 ---
 
@@ -188,10 +188,10 @@ def test_missing_status(self):
 
 | Query | Detected Intent | Expected | Match |
 |-------|----------------|----------|-------|
-| "Show me top 10" | data_query | data_query | ✅ |
-| "הצג לי נתונים" | data_query | data_query | ✅ |
-| "Find spike" | anomaly_detection | anomaly_detection | ✅ |
-| "Weather today?" | not_relevant | not_relevant | ✅ |
+| "Show me top 10" | data_query | data_query | PASS |
+| "הצג לי נתונים" | data_query | data_query | PASS |
+| "Find spike" | anomaly_detection | anomaly_detection | PASS |
+| "Weather today?" | not_relevant | not_relevant | PASS |
 
 ---
 
@@ -207,21 +207,21 @@ def test_missing_status(self):
   Test: Valid JSON
   Input: {"status": "ok", "message": "Success"}...
   Result: {'status': 'ok', 'message': 'Success'}
-  Status: ✅ PASS
+  Status: PASS
 
   Test: JSON with Markdown
   Input: ```json
 {"status": "ok", "data": [1, 2, 3]}
 ```...
   Result: {'status': 'ok', 'data': [1, 2, 3]}
-  Status: ✅ PASS
+  Status: PASS
 
   Test: Invalid JSON
   Input: This is not JSON...
   Result: {}
-  Status: ✅ PASS
+  Status: PASS
 
-  📊 Results: 3 passed, 0 failed
+  Results: 3 passed, 0 failed
 
 
 📅 דוגמה 2: בדיקת ניתוח תאריכים
@@ -229,89 +229,89 @@ def test_missing_status(self):
   Input: 'היום'
   Parsed: 2025-12-22
   Expected: 2025-12-22
-  Status: ✅ PASS
+  Status: PASS
 
   Input: 'today'
   Parsed: 2025-12-22
   Expected: 2025-12-22
-  Status: ✅ PASS
+  Status: PASS
 
   Input: 'אתמול'
   Parsed: 2025-12-21
   Expected: 2025-12-21
-  Status: ✅ PASS
+  Status: PASS
 
   Input: 'yesterday'
   Parsed: 2025-12-21
   Expected: 2025-12-21
-  Status: ✅ PASS
+  Status: PASS
 
   Input: 'שלשום'
   Parsed: 2025-12-20
   Expected: 2025-12-20
-  Status: ✅ PASS
+  Status: PASS
 
-  📊 Results: 5/5 passed
+  Results: 5/5 passed
 
 
-🎯 דוגמה 3: בדיקת זיהוי כוונות משתמש
+Goal דוגמה 3: בדיקת זיהוי כוונות משתמש
 ----------------------------------------------------------------------
   Query: 'Show me top 10 media sources'
   Detected Intent: data_query
   Expected Intent: data_query
-  Status: ✅ PASS
+  Status: PASS
 
   Query: 'הצג לי את 10 מקורות המדיה המובילים'
   Detected Intent: data_query
   Expected Intent: data_query
-  Status: ✅ PASS
+  Status: PASS
 
   Query: 'Detect anomalies in clicks'
   Detected Intent: not_relevant
   Expected Intent: anomaly_detection
-  Status: ❌ FAIL
+  Status: FAIL
 
   Query: 'What's the weather today?'
   Detected Intent: not_relevant
   Expected Intent: not_relevant
-  Status: ✅ PASS
+  Status: PASS
 
-  📊 Results: 3/4 passed
+  Results: 3/4 passed
 
 
-🌐 דוגמה 4: בדיקת תקינות תגובות API
+Globe דוגמה 4: בדיקת תקינות תגובות API
 ----------------------------------------------------------------------
   Test: Valid OK Response
   Response: {'status': 'ok', 'data': [1, 2, 3]}
   Validation: Valid response
-  Status: ✅ PASS
+  Status: PASS
 
   Test: Valid Error Response
   Response: {'status': 'error', 'message': 'Error occurred'}
   Validation: Valid response
-  Status: ✅ PASS
+  Status: PASS
 
   Test: Missing Status
   Response: {'data': [1, 2, 3]}
   Validation: Missing 'status' field
-  Status: ✅ PASS
+  Status: PASS
 
   Test: Invalid Status
   Response: {'status': 'unknown'}
   Validation: Invalid status: unknown
-  Status: ✅ PASS
+  Status: PASS
 
-  📊 Results: 4/4 passed
+  Results: 4/4 passed
 
 
 ============================================================
-📊 סיכום כללי - Overall Summary
+Summary - Overall Summary
 ============================================================
 
-✅ Tests Passed:     15/16 (93.8%)
-❌ Tests Failed:     1
-📦 Test Categories:  4
-⏱️  Duration:        ~1.2s
+Tests Passed:     15/16 (93.8%)
+Tests Failed:     1
+Test Categories:  4
+Duration:        ~1.2s
 
 Categories:
   - JSON Utils:       3/3 passed
@@ -320,7 +320,7 @@ Categories:
   - API Validation:   4/4 passed
 
 ============================================================
-✨ Demo completed successfully! ✨
+Demo completed successfully!
 ============================================================
 ```
 

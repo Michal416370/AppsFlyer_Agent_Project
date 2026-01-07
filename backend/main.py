@@ -22,22 +22,22 @@ app = FastAPI()
 # ---- CORS ----
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # אפשר ["*"] לבדיקה
+    allow_origins=["http://localhost:5173"],  # Can use ["*"] for testing
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---- יצירת ADK App ו-Runner ----
+# ---- Create ADK App and Runner ----
 adk_app = App(name="appsflyer_agent", root_agent=root_agent)
 session_service = InMemorySessionService()
 runner = Runner(app=adk_app, session_service=session_service)
 
-# קבועים למזהים
+# Constants for IDs
 USER_ID = "default_user"
 SESSION_ID = "default_session"
 
-# ---- אתחול BigQuery ----
+# ---- Initialize BigQuery ----
 try:
     bq_client = BQClient()
     bq_client.ensure_chat_history_table()
@@ -47,7 +47,7 @@ except Exception as e:
     bq_client = None
 
 
-# ---- בדיקת חיים ----
+# ---- Health check ----
 @app.get("/health")
 def health():
     return {"ok": True}
@@ -124,7 +124,7 @@ async def run_agent(message: str):
             author = getattr(event, "author", None)
             logger.info(f"[run_agent] author={author} prefix={txt[:80]!r}")
 
-            # Debug (אפשר להוריד אחרי שתעבוד)
+            # Debug (can be removed after it works)
             logger.debug(f"event.author={author} text_prefix={txt[:60]}")
 
             # ✅ prefer react component if it appears anywhere

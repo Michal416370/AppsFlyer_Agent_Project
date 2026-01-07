@@ -1,26 +1,26 @@
 """
 Demo Script - Simple Testing Examples
-דוגמאות פשוטות להצגת בדיקות
+Simple examples for showing tests
 
-הסקריפט הזה מציג דוגמאות לבדיקות בלי לדרוש את כל המערכת
+This script shows testing examples without requiring the entire system
 """
 
 print("=" * 70)
-print("🧪 AppsFlyerAgent Testing Demo - דוגמאות בדיקות")
+print("Testing Demo - Testing Examples")
 print("=" * 70)
 
 # ============================================
-# דוגמה 1: בדיקת JSON Parsing
+# Example 1: Testing JSON Parsing
 # ============================================
 
-print("\n📋 דוגמה 1: בדיקת ניקוי וטיפול ב-JSON")
+print("\n Example 1: Testing JSON Cleaning and Handling")
 print("-" * 70)
 
 import json
 import re
 
 def clean_json(text):
-    """פונקציית עזר לניקוי JSON"""
+    """Helper function to clean JSON"""
     if isinstance(text, dict):
         return text
     
@@ -80,10 +80,10 @@ print(f"\n  📊 Results: {passed} passed, {failed} failed")
 
 
 # ============================================
-# דוגמה 2: בדיקת Date Parsing
+# Example 2: Testing Date Parsing
 # ============================================
 
-print("\n\n📅 דוגמה 2: בדיקת ניתוח תאריכים")
+print("\n\n Example 2: Testing Date Analysis")
 print("-" * 70)
 
 from datetime import datetime, timedelta
@@ -129,10 +129,10 @@ print(f"\n  📊 Results: {passed_dates}/{len(date_tests)} passed")
 
 
 # ============================================
-# דוגמה 3: בדיקת Intent Recognition
+# Example 3: Testing Intent Recognition
 # ============================================
 
-print("\n\n🎯 דוגמה 3: בדיקת זיהוי כוונות משתמש")
+print("\n\n Example 3: Testing User Intent Detection")
 print("-" * 70)
 
 def classify_intent(query):
@@ -188,10 +188,10 @@ print(f"\n  📊 Results: {passed_intents}/{len(intent_tests)} passed")
 
 
 # ============================================
-# דוגמה 4: API Response Validation
+# Example 4: API Response Validation
 # ============================================
 
-print("\n\n🌐 דוגמה 4: בדיקת תקינות תגובות API")
+print("\n\n Example 4: Testing API Response Validation")
 print("-" * 70)
 
 def validate_api_response(response):
